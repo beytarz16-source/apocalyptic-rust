@@ -110,6 +110,23 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script>
+        // Hata yakalama ve debug
+        window.addEventListener('error', (e) => {
+            console.error('JavaScript Error:', e.error);
+        });
+        
+        // Script yükleme kontrolü
+        window.addEventListener('load', () => {
+            console.log('Page loaded');
+            if (typeof Auth === 'undefined') {
+                console.error('Auth.js yüklenmedi!');
+            }
+            if (typeof THREE === 'undefined') {
+                console.error('Three.js yüklenmedi!');
+            }
+        });
+    </script>
     <script src="js/auth.js"></script>
     <script src="js/game.js"></script>
     <script src="js/player.js"></script>

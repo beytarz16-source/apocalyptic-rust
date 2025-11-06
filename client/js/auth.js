@@ -6,18 +6,32 @@ class Auth {
     }
 
     init() {
-        document.getElementById('loginBtn').addEventListener('click', () => this.login());
-        document.getElementById('registerBtn').addEventListener('click', () => this.register());
+        // Butonların yüklendiğinden emin ol
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        
+        if (!loginBtn || !registerBtn) {
+            console.error('Login buttons not found!');
+            return;
+        }
+
+        loginBtn.addEventListener('click', () => this.login());
+        registerBtn.addEventListener('click', () => this.register());
         
         // Enter key support
-        document.getElementById('password').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.login();
-        });
+        const passwordInput = document.getElementById('password');
+        if (passwordInput) {
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') this.login();
+            });
+        }
 
         // Check if already logged in
         if (this.token && this.username) {
             this.showGame();
         }
+
+        console.log('Auth system initialized');
     }
 
     async login() {
@@ -31,7 +45,9 @@ class Auth {
         }
 
         try {
-            const response = await fetch('/api/auth/login', {
+            // Backend URL'ini otomatik algıla
+            const apiUrl = window.location.origin;
+            const response = await fetch(`${apiUrl}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
@@ -50,7 +66,7 @@ class Auth {
             }
         } catch (error) {
             console.error('Login error:', error);
-            errorDiv.textContent = 'Bağlantı hatası';
+            errorDiv.textContent = `Bağlantı hatası: ${error.message}. Backend çalışıyor mu kontrol edin.`;
         }
     }
 
@@ -70,7 +86,9 @@ class Auth {
         }
 
         try {
-            const response = await fetch('/api/auth/register', {
+            // Backend URL'ini otomatik algıla
+            const apiUrl = window.location.origin;
+            const response = await fetch(`${apiUrl}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
@@ -89,7 +107,7 @@ class Auth {
             }
         } catch (error) {
             console.error('Register error:', error);
-            errorDiv.textContent = 'Bağlantı hatası';
+            errorDiv.textContent = `Bağlantı hatası: ${error.message}. Backend çalışıyor mu kontrol edin.`;
         }
     }
 

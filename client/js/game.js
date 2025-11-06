@@ -150,7 +150,9 @@ class Game {
     }
 
     setupSocket() {
-        this.socket = io();
+        // Socket.io bağlantısını otomatik algıla
+        const socketUrl = window.location.origin;
+        this.socket = io(socketUrl);
 
         this.socket.on('connect', () => {
             console.log('Connected to server');
