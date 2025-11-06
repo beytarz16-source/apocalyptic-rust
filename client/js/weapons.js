@@ -1,5 +1,12 @@
 class WeaponSystem {
     constructor() {
+        this.equippedWeapon = null;
+        this.currentAmmo = 0;
+        this.totalAmmo = 0;
+        this.isReloading = false;
+        this.lastShotTime = 0;
+        this.isAiming = false;
+        
         this.weapons = {
             'M4A1': {
                 name: 'M4A1',
@@ -75,12 +82,8 @@ class WeaponSystem {
             'Quick Draw Magazine': { type: 'magazine', reloadSpeed: 0.7, name: 'Quick Draw Magazine' }
         };
 
-        this.equippedWeapon = null;
-        this.currentAmmo = 0;
-        this.totalAmmo = 0;
-        this.isReloading = false;
-        this.lastShotTime = 0;
-        this.isAiming = false;
+        // Başlangıçta mühimmat sayacını güncelle
+        this.updateAmmoDisplay();
     }
 
     equipWeapon(weaponName, ammoCount = 0) {
@@ -156,6 +159,11 @@ class WeaponSystem {
 
         this.isReloading = true;
         
+        // Ses efekti
+        if (window.audioManager) {
+            window.audioManager.playSound('reload', 0.4);
+        }
+        
         const reloadTime = this.equippedWeapon.reloadTime * 1000;
         const quickDraw = this.equippedWeapon.attachments.find(a => a.reloadSpeed);
         const actualReloadTime = quickDraw ? reloadTime * quickDraw.reloadSpeed : reloadTime;
@@ -173,8 +181,16 @@ class WeaponSystem {
     }
 
     updateAmmoDisplay() {
-        document.getElementById('currentAmmo').textContent = this.currentAmmo;
-        document.getElementById('totalAmmo').textContent = this.totalAmmo;
+        const currentAmmoEl = document.getElementById('currentAmmo');
+        const totalAmmoEl = document.getElementById('totalAmmo');
+        
+        if (this.equippedWeapon) {
+            if (currentAmmoEl) currentAmmoEl.textContent = this.currentAmmo;
+            if (totalAmmoEl) totalAmmoEl.textContent = this.totalAmmo;
+        } else {
+            if (currentAmmoEl) currentAmmoEl.textContent = '-';
+            if (totalAmmoEl) totalAmmoEl.textContent = '-';
+        }
     }
 
     getZoomLevel() {

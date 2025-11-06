@@ -11,6 +11,9 @@ class Game {
         this.lastUpdateTime = 0;
         this.interactionRange = 3;
         this.nearbyLoot = null;
+        this.particleSystem = null;
+        this.textureLoader = null;
+        this.gltfLoader = null;
     }
 
     init() {
@@ -33,6 +36,27 @@ class Game {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x2a2a2a);
         this.scene.fog = new THREE.FogExp2(0x2a2a2a, 0.02);
+
+        // Texture loader
+        this.textureLoader = new THREE.TextureLoader();
+
+        // GLTF loader (CDN'den yüklenecek - HTML'de script tag'i var)
+        // GLTF Loader yüklendikten sonra kullanılabilir
+        this.gltfLoader = null;
+        if (typeof THREE !== 'undefined' && THREE.GLTFLoader) {
+            this.gltfLoader = new THREE.GLTFLoader();
+        } else {
+            // Script yüklendikten sonra kontrol et
+            setTimeout(() => {
+                if (typeof THREE !== 'undefined' && THREE.GLTFLoader) {
+                    this.gltfLoader = new THREE.GLTFLoader();
+                    console.log('GLTF Loader loaded');
+                }
+            }, 1000);
+        }
+
+        // Particle system
+        this.particleSystem = new ParticleSystem(this.scene);
 
         // Camera
         this.camera = new THREE.PerspectiveCamera(
@@ -91,8 +115,38 @@ class Game {
     createWorld() {
         // Ground with texture variation
         const groundGeometry = new THREE.PlaneGeometry(1000, 1000, 50, 50);
+        
+        // Texture oluştur (procedural)
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        
+        // Zemin texture'ı (beton/asfalt görünümü)
+        const gradient = ctx.createLinearGradient(0, 0, 512, 512);
+        gradient.addColorStop(0, '#2a2a2a');
+        gradient.addColorStop(0.5, '#3a3a3a');
+        gradient.addColorStop(1, '#2a2a2a');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 512, 512);
+        
+        // Noise ekle
+        const imageData = ctx.getImageData(0, 0, 512, 512);
+        for (let i = 0; i < imageData.data.length; i += 4) {
+            const noise = (Math.random() - 0.5) * 20;
+            imageData.data[i] = Math.max(0, Math.min(255, imageData.data[i] + noise));
+            imageData.data[i + 1] = Math.max(0, Math.min(255, imageData.data[i + 1] + noise));
+            imageData.data[i + 2] = Math.max(0, Math.min(255, imageData.data[i + 2] + noise));
+        }
+        ctx.putImageData(imageData, 0, 0);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(20, 20);
+        
         const groundMaterial = new THREE.MeshStandardMaterial({
-            color: 0x3a3a3a,
+            map: texture,
             roughness: 0.9,
             metalness: 0.1
         });
@@ -112,26 +166,35 @@ class Game {
     }
 
     createRoads() {
+        // Ana yol texture'ı
+        const roadCanvas = document.createElement('canvas');
+        roadCanvas.width = 512;
+        roadCanvas.height = 64;
+        const roadCtx = roadCanvas.getContext('2d');
+        roadCtx.fillStyle = '#1a1a1a';
+        roadCtx.fillRect(0, 0, 512, 64);
+        
+        // Yol çizgileri
+        roadCtx.fillStyle = '#ffff00';
+        for (let i = 0; i < 512; i += 40) {
+            roadCtx.fillRect(i, 30, 20, 4);
+        }
+        
+        const roadTexture = new THREE.CanvasTexture(roadCanvas);
+        roadTexture.wrapS = THREE.RepeatWrapping;
+        roadTexture.wrapT = THREE.RepeatWrapping;
+        roadTexture.repeat.set(10, 1);
+        
         // Ana yol
         const roadGeometry = new THREE.PlaneGeometry(200, 8);
         const roadMaterial = new THREE.MeshStandardMaterial({
-            color: 0x2a2a2a,
+            map: roadTexture,
             roughness: 0.7
         });
         const mainRoad = new THREE.Mesh(roadGeometry, roadMaterial);
         mainRoad.rotation.x = -Math.PI / 2;
         mainRoad.position.set(0, 0.01, 0);
         this.scene.add(mainRoad);
-
-        // Yol çizgileri
-        for (let i = -100; i < 100; i += 10) {
-            const lineGeometry = new THREE.PlaneGeometry(2, 0.2);
-            const lineMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00 });
-            const line = new THREE.Mesh(lineGeometry, lineMaterial);
-            line.rotation.x = -Math.PI / 2;
-            line.position.set(i, 0.02, 0);
-            this.scene.add(line);
-        }
     }
 
     createEnvironmentDetails() {
@@ -200,6 +263,70 @@ class Game {
             );
             this.scene.add(debris);
         }
+
+        // Sokak lambaları
+        for (let i = 0; i < 15; i++) {
+            const lampGroup = new THREE.Group();
+            
+            // Direk
+            const poleGeometry = new THREE.CylinderGeometry(0.1, 0.1, 4, 8);
+            const poleMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            const pole = new THREE.Mesh(poleGeometry, poleMaterial);
+            pole.position.y = 2;
+            lampGroup.add(pole);
+            
+            // Lamba
+            const lampGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+            const lampMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xffffaa,
+                emissive: 0xffffaa,
+                emissiveIntensity: 0.5
+            });
+            const lamp = new THREE.Mesh(lampGeometry, lampMaterial);
+            lamp.position.y = 4;
+            lampGroup.add(lamp);
+            
+            // Işık
+            const light = new THREE.PointLight(0xffffaa, 0.5, 10);
+            light.position.y = 4;
+            lampGroup.add(light);
+            
+            lampGroup.position.set(
+                (Math.random() - 0.5) * 150,
+                0,
+                (Math.random() - 0.5) * 150
+            );
+            this.scene.add(lampGroup);
+        }
+
+        // Çitler ve bariyerler
+        for (let i = 0; i < 10; i++) {
+            const fenceGroup = new THREE.Group();
+            const fenceLength = 5 + Math.random() * 5;
+            
+            for (let j = 0; j < fenceLength; j++) {
+                const postGeometry = new THREE.BoxGeometry(0.1, 1, 0.1);
+                const postMaterial = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
+                const post = new THREE.Mesh(postGeometry, postMaterial);
+                post.position.set(j * 0.5, 0.5, 0);
+                fenceGroup.add(post);
+                
+                if (j < fenceLength - 1) {
+                    const barGeometry = new THREE.BoxGeometry(0.5, 0.05, 0.05);
+                    const bar = new THREE.Mesh(barGeometry, postMaterial);
+                    bar.position.set(j * 0.5 + 0.25, 0.5, 0);
+                    fenceGroup.add(bar);
+                }
+            }
+            
+            fenceGroup.position.set(
+                (Math.random() - 0.5) * 180,
+                0,
+                (Math.random() - 0.5) * 180
+            );
+            fenceGroup.rotation.y = Math.random() * Math.PI * 2;
+            this.scene.add(fenceGroup);
+        }
     }
 
     createBuildings() {
@@ -220,10 +347,45 @@ class Game {
     createDetailedBuilding(pos) {
         const buildingGroup = new THREE.Group();
 
+        // Bina texture'ı oluştur
+        const buildingCanvas = document.createElement('canvas');
+        buildingCanvas.width = 256;
+        buildingCanvas.height = 256;
+        const buildingCtx = buildingCanvas.getContext('2d');
+        
+        // Beton görünümü
+        const buildingGradient = buildingCtx.createLinearGradient(0, 0, 256, 256);
+        buildingGradient.addColorStop(0, '#444444');
+        buildingGradient.addColorStop(0.5, '#555555');
+        buildingGradient.addColorStop(1, '#333333');
+        buildingCtx.fillStyle = buildingGradient;
+        buildingCtx.fillRect(0, 0, 256, 256);
+        
+        // Tuğla deseni
+        buildingCtx.strokeStyle = '#333333';
+        buildingCtx.lineWidth = 1;
+        for (let y = 0; y < 256; y += 16) {
+            buildingCtx.beginPath();
+            buildingCtx.moveTo(0, y);
+            buildingCtx.lineTo(256, y);
+            buildingCtx.stroke();
+        }
+        for (let x = 0; x < 256; x += 32) {
+            buildingCtx.beginPath();
+            buildingCtx.moveTo(x, 0);
+            buildingCtx.lineTo(x, 256);
+            buildingCtx.stroke();
+        }
+        
+        const buildingTexture = new THREE.CanvasTexture(buildingCanvas);
+        buildingTexture.wrapS = THREE.RepeatWrapping;
+        buildingTexture.wrapT = THREE.RepeatWrapping;
+        buildingTexture.repeat.set(2, 4);
+        
         // Ana bina gövdesi
         const geometry = new THREE.BoxGeometry(pos.width, pos.height, pos.depth);
         const material = new THREE.MeshStandardMaterial({
-            color: 0x555555,
+            map: buildingTexture,
             roughness: 0.8,
             metalness: 0.2
         });
@@ -521,6 +683,9 @@ class Game {
             mesh: lootGroup,
             glow: glow
         };
+
+        // Loot toplandığında ses efekti
+        // (interact fonksiyonunda zaten var)
     }
 
     setupControls() {
@@ -585,6 +750,28 @@ class Game {
         const direction = new THREE.Vector3(0, 0, -1);
         direction.applyQuaternion(this.camera.quaternion);
 
+        // Muzzle flash pozisyonu (kameranın önü)
+        const muzzlePosition = new THREE.Vector3();
+        this.camera.getWorldPosition(muzzlePosition);
+        const forward = new THREE.Vector3(0, 0, -1);
+        forward.applyQuaternion(this.camera.quaternion);
+        forward.multiplyScalar(0.5);
+        muzzlePosition.add(forward);
+
+        // Parçacık efektleri
+        if (this.particleSystem) {
+            this.particleSystem.createMuzzleFlash(muzzlePosition, direction);
+            // Duman efekti
+            setTimeout(() => {
+                this.particleSystem.createSmoke(muzzlePosition);
+            }, 50);
+        }
+
+        // Ses efekti
+        if (window.audioManager) {
+            window.audioManager.playSound('shoot', 0.5);
+        }
+
         // Send to server
         if (this.socket) {
             this.socket.emit('player:shoot', {
@@ -599,6 +786,11 @@ class Game {
 
     interact() {
         if (!this.nearbyLoot) return;
+
+        // Ses efekti
+        if (window.audioManager) {
+            window.audioManager.playSound('loot', 0.5);
+        }
 
         if (this.socket) {
             this.socket.emit('player:loot', this.nearbyLoot);
@@ -701,6 +893,11 @@ class Game {
                     loot.mesh.position.y = loot.position.y + 0.25 + floatAmount;
                 }
             });
+
+            // Update particle system
+            if (this.particleSystem) {
+                this.particleSystem.update(deltaTime);
+            }
 
             // Send position to server
             if (this.socket && this.socket.connected) {

@@ -6,8 +6,11 @@ class Player {
         this.rotation = { x: 0, y: 0 };
         this.velocity = { x: 0, y: 0, z: 0 };
         this.speed = 5;
+        this.walkSpeed = 5;
+        this.runSpeed = 8;
         this.jumpSpeed = 8;
         this.isGrounded = true;
+        this.isRunning = false;
         
         // Stats
         this.health = 100;
@@ -88,9 +91,17 @@ class Player {
     createWeaponModel(weaponName) {
         if (this.weaponMesh) {
             this.scene.remove(this.weaponMesh);
+            this.weaponMesh.geometry?.dispose();
+            this.weaponMesh.material?.dispose();
         }
 
-        // Basit silah modelleri (daha sonra GLTF ile değiştirilebilir)
+        // GLTF loader varsa GLTF model yükle, yoksa basit model kullan
+        if (window.game && window.game.gltfLoader) {
+            this.loadWeaponGLTF(weaponName);
+            return;
+        }
+
+        // Basit silah modelleri (fallback)
         const weaponGroup = new THREE.Group();
         
         if (weaponName === 'M4A1' || weaponName === 'AK-47') {
@@ -145,6 +156,27 @@ class Player {
 
         this.weaponMesh = weaponGroup;
         this.scene.add(this.weaponMesh);
+    }
+
+    loadWeaponGLTF(weaponName) {
+        // GLTF model yükleme (örnek - gerçek model dosyaları eklendiğinde)
+        // const modelPath = `models/weapons/${weaponName.toLowerCase()}.gltf`;
+        // window.game.gltfLoader.load(
+        //     modelPath,
+        //     (gltf) => {
+        //         this.weaponMesh = gltf.scene;
+        //         this.weaponMesh.scale.set(0.1, 0.1, 0.1);
+        //         this.scene.add(this.weaponMesh);
+        //     },
+        //     undefined,
+        //     (error) => {
+        //         console.warn('GLTF model yüklenemedi, basit model kullanılıyor:', error);
+        //         this.createWeaponModel(weaponName); // Fallback
+        //     }
+        // );
+        
+        // Şimdilik basit model kullan
+        this.createWeaponModel(weaponName);
     }
 
     updateWeaponPosition() {
@@ -228,6 +260,10 @@ class Player {
     }
 
     update(deltaTime) {
+        // Check if running (Shift key)
+        this.isRunning = this.keys['shift'] || false;
+        this.speed = this.isRunning ? this.runSpeed : this.walkSpeed;
+
         // Movement
         const moveVector = new THREE.Vector3();
         
@@ -246,6 +282,17 @@ class Player {
 
         this.position.x += moveVector.x;
         this.position.z += moveVector.z;
+
+        // Ayak sesi efekti (koşarken veya yürürken)
+        if (moveVector.length() > 0 && this.isGrounded) {
+            const footstepInterval = this.isRunning ? 0.3 : 0.5;
+            if (!this.lastFootstep || Date.now() - this.lastFootstep > footstepInterval * 1000) {
+                if (window.audioManager) {
+                    window.audioManager.playSound('footstep', 0.1);
+                }
+                this.lastFootstep = Date.now();
+            }
+        }
 
         // Gravity
         if (!this.isGrounded) {

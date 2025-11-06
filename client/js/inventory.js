@@ -62,6 +62,9 @@ class Inventory {
 
         if (item.type === 'weapon') {
             this.equipWeapon(item);
+            if (window.audioManager) {
+                window.audioManager.playSound('loot', 0.3);
+            }
         } else if (item.type === 'food') {
             this.consumeFood(item);
         } else if (item.type === 'water') {
