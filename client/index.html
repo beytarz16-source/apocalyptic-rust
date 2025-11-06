@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APOCALYPTIC RUST - Hayatta Kal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen">
+        <div class="login-container">
+            <h1>APOCALYPTIC RUST</h1>
+            <div id="loginForm">
+                <input type="text" id="username" placeholder="Kullanıcı Adı" required>
+                <input type="password" id="password" placeholder="Şifre" required>
+                <button id="loginBtn">Giriş Yap</button>
+                <button id="registerBtn">Kayıt Ol</button>
+                <div id="authError" class="error"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen hidden">
+        <!-- Canvas Container -->
+        <div id="gameContainer"></div>
+
+        <!-- HUD -->
+        <div id="hud">
+            <!-- Health Bar -->
+            <div class="stat-bar">
+                <div class="stat-label">CAN</div>
+                <div class="stat-bar-bg">
+                    <div id="healthBar" class="stat-bar-fill health"></div>
+                </div>
+                <span id="healthValue">100</span>
+            </div>
+
+            <!-- Armor Bar -->
+            <div class="stat-bar">
+                <div class="stat-label">ZIRH</div>
+                <div class="stat-bar-bg">
+                    <div id="armorBar" class="stat-bar-fill armor"></div>
+                </div>
+                <span id="armorValue">0</span>
+            </div>
+
+            <!-- Hunger Bar -->
+            <div class="stat-bar">
+                <div class="stat-label">AÇLIK</div>
+                <div class="stat-bar-bg">
+                    <div id="hungerBar" class="stat-bar-fill hunger"></div>
+                </div>
+                <span id="hungerValue">100</span>
+            </div>
+
+            <!-- Thirst Bar -->
+            <div class="stat-bar">
+                <div class="stat-label">SUSUZLUK</div>
+                <div class="stat-bar-bg">
+                    <div id="thirstBar" class="stat-bar-fill thirst"></div>
+                </div>
+                <span id="thirstValue">100</span>
+            </div>
+
+            <!-- Ammo Counter -->
+            <div id="ammoCounter" class="ammo-counter">
+                <span id="currentAmmo">0</span> / <span id="totalAmmo">0</span>
+            </div>
+
+            <!-- Crosshair -->
+            <div id="crosshair" class="crosshair"></div>
+        </div>
+
+        <!-- Inventory -->
+        <div id="inventory" class="inventory hidden">
+            <div class="inventory-header">
+                <h2>ENVANTER</h2>
+                <button id="closeInventory">X</button>
+            </div>
+            <div id="inventoryGrid" class="inventory-grid"></div>
+            <div id="weaponAttachments" class="attachments-panel hidden">
+                <h3>Eklentiler</h3>
+                <div id="attachmentsList"></div>
+            </div>
+        </div>
+
+        <!-- Map -->
+        <div id="map" class="map hidden">
+            <div class="map-header">
+                <h2>HARİTA</h2>
+                <button id="closeMap">X</button>
+            </div>
+            <canvas id="mapCanvas"></canvas>
+        </div>
+
+        <!-- Pause Menu -->
+        <div id="pauseMenu" class="pause-menu hidden">
+            <h2>DURAKLATILDI</h2>
+            <button id="resumeBtn">Devam Et</button>
+            <button id="quitBtn">Çıkış</button>
+        </div>
+
+        <!-- Interaction Prompt -->
+        <div id="interactionPrompt" class="interaction-prompt hidden">
+            [F] Etkileşim
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/weapons.js"></script>
+    <script src="js/inventory.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
+
+
