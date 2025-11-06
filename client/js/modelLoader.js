@@ -207,14 +207,15 @@ class ModelLoader {
                     `models/objects/tree.gltf`,
                     `models/objects/tree.glb`
                 ],
-                'car': [
-                    `models/objects/car.gltf`,
-                    `models/objects/car.glb`
-                ],
-                'barriers': [
-                    `models/objects/barriers.gltf`,
-                    `models/objects/barriers.glb`
-                ]
+                // car ve barriers için scene.bin eksik, direkt procedural kullan
+                // 'car': [
+                //     `models/objects/car.gltf`,
+                //     `models/objects/car.glb`
+                // ],
+                // 'barriers': [
+                //     `models/objects/barriers.gltf`,
+                //     `models/objects/barriers.glb`
+                // ]
             }
         };
 
@@ -236,6 +237,13 @@ class ModelLoader {
                 return this.createProceduralTrashBin();
             case 'tree':
                 return this.createProceduralTree();
+            case 'object':
+                if (modelName === 'car') {
+                    return this.createProceduralCar();
+                } else if (modelName === 'barriers') {
+                    return this.createProceduralBarriers();
+                }
+                return null;
             default:
                 return null;
         }
@@ -364,8 +372,104 @@ class ModelLoader {
     }
 
     createProceduralTree() {
-        // game.js'deki gibi
-        return null;
+        const group = new THREE.Group();
+        
+        // Gövde (gerçekçi: ~0.3-0.6m çap, ~4-8m yükseklik)
+        const trunkHeight = 4 + Math.random() * 4;
+        const trunkRadius = 0.15 + Math.random() * 0.15;
+        const trunkGeometry = new THREE.CylinderGeometry(trunkRadius, trunkRadius * 1.2, trunkHeight, 8);
+        const trunkMaterial = new THREE.MeshStandardMaterial({
+            color: 0x4a2c1a,
+            roughness: 0.9
+        });
+        const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+        trunk.position.y = trunkHeight / 2;
+        group.add(trunk);
+        
+        // Yapraklar (taç) - gerçekçi: ~3-6m çap
+        const crownSize = 2 + Math.random() * 2;
+        const crownGeometry = new THREE.ConeGeometry(crownSize, crownSize * 1.5, 8);
+        const crownMaterial = new THREE.MeshStandardMaterial({
+            color: 0x2d5016,
+            roughness: 0.8
+        });
+        const crown = new THREE.Mesh(crownGeometry, crownMaterial);
+        crown.position.y = trunkHeight + crownSize * 0.5;
+        group.add(crown);
+        
+        return group;
+    }
+
+    createProceduralCar() {
+        const group = new THREE.Group();
+        
+        // Araba gövdesi
+        const bodyGeometry = new THREE.BoxGeometry(4, 1.5, 2);
+        const bodyMaterial = new THREE.MeshStandardMaterial({
+            color: 0x333333,
+            roughness: 0.3,
+            metalness: 0.7
+        });
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        body.position.y = 0.75;
+        group.add(body);
+        
+        // Tekerlekler
+        const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
+        const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+        const wheels = [
+            { x: -1.2, z: 0.8 },
+            { x: 1.2, z: 0.8 },
+            { x: -1.2, z: -0.8 },
+            { x: 1.2, z: -0.8 }
+        ];
+        wheels.forEach(wheel => {
+            const wheelMesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
+            wheelMesh.rotation.z = Math.PI / 2;
+            wheelMesh.position.set(wheel.x, 0.4, wheel.z);
+            group.add(wheelMesh);
+        });
+        
+        // Camlar
+        const windowGeometry = new THREE.BoxGeometry(1.5, 0.8, 0.05);
+        const windowMaterial = new THREE.MeshStandardMaterial({
+            color: 0x88ccff,
+            transparent: true,
+            opacity: 0.3
+        });
+        const frontWindow = new THREE.Mesh(windowGeometry, windowMaterial);
+        frontWindow.position.set(0, 1.2, 1);
+        group.add(frontWindow);
+        
+        return group;
+    }
+
+    createProceduralBarriers() {
+        const group = new THREE.Group();
+        
+        // Bariyer (traffic cone benzeri)
+        const coneGeometry = new THREE.ConeGeometry(0.3, 0.8, 8);
+        const coneMaterial = new THREE.MeshStandardMaterial({
+            color: 0xff6600,
+            roughness: 0.5
+        });
+        const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+        cone.position.y = 0.4;
+        group.add(cone);
+        
+        // Reflektör bandı
+        const bandGeometry = new THREE.TorusGeometry(0.35, 0.05, 8, 16);
+        const bandMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffff00,
+            emissive: 0xffff00,
+            emissiveIntensity: 0.5
+        });
+        const band = new THREE.Mesh(bandGeometry, bandMaterial);
+        band.rotation.x = Math.PI / 2;
+        band.position.y = 0.3;
+        group.add(band);
+        
+        return group;
     }
 }
 
