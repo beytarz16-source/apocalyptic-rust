@@ -560,17 +560,36 @@ class Game {
 
     async createBuildings() {
         const buildingPositions = [
-            { x: 20, z: 20, width: 10, height: 15, depth: 10, floors: 4 },
-            { x: -30, z: 25, width: 12, height: 20, depth: 12, floors: 5 },
-            { x: 40, z: -30, width: 15, height: 18, depth: 15, floors: 4 },
-            { x: -25, z: -40, width: 8, height: 12, depth: 8, floors: 3 },
-            { x: 50, z: 30, width: 14, height: 16, depth: 14, floors: 4 },
-            { x: -40, z: -20, width: 10, height: 14, depth: 10, floors: 3 }
+            { x: 20, z: 20, width: 10, height: 15, depth: 10, floors: 4, type: 'apartment' },
+            { x: -30, z: 25, width: 12, height: 20, depth: 12, floors: 5, type: 'warehouse' },
+            { x: 40, z: -30, width: 15, height: 18, depth: 15, floors: 4, type: 'apartment' },
+            { x: -25, z: -40, width: 8, height: 12, depth: 8, floors: 3, type: 'apartment' },
+            { x: 50, z: 30, width: 14, height: 16, depth: 14, floors: 4, type: 'warehouse' },
+            { x: -40, z: -20, width: 10, height: 14, depth: 10, floors: 3, type: 'apartment' }
         ];
 
-        buildingPositions.forEach(pos => {
+        for (const pos of buildingPositions) {
+            // GLTF model yükleme dene
+            if (this.modelLoader) {
+                try {
+                    const model = await this.modelLoader.loadModel('building', pos.type);
+                    if (model) {
+                        // Model yüklendi, pozisyon ve ölçek ayarla
+                        model.position.set(pos.x, 0, pos.z);
+                        model.scale.set(pos.width / 10, pos.height / 10, pos.depth / 10);
+                        model.castShadow = true;
+                        model.receiveShadow = true;
+                        this.scene.add(model);
+                        console.log(`✅ GLTF bina yüklendi: ${pos.type} at (${pos.x}, ${pos.z})`);
+                        continue; // Bu bina için GLTF kullanıldı, procedural'a geçme
+                    }
+                } catch (error) {
+                    console.warn(`Bina modeli yüklenemedi (${pos.type}), procedural kullanılıyor:`, error);
+                }
+            }
+            // Fallback: Procedural bina
             this.createDetailedBuilding(pos);
-        });
+        }
     }
 
     createDetailedBuilding(pos) {

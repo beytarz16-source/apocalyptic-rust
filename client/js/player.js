@@ -41,7 +41,35 @@ class Player {
         this.setupControls();
     }
 
-    createPlayerModel() {
+    async createPlayerModel() {
+        // GLTF model yükleme dene
+        if (window.game && window.game.modelLoader) {
+            try {
+                const model = await window.game.modelLoader.loadModel('character', 'player');
+                if (model) {
+                    // Model yüklendi
+                    if (this.mesh) {
+                        this.scene.remove(this.mesh);
+                        this.mesh.geometry?.dispose();
+                        this.mesh.material?.dispose();
+                    }
+                    
+                    // Ölçeklendirme (gerçekçi insan boyutu: ~1.75m)
+                    model.scale.set(1, 1, 1);
+                    model.position.set(this.position.x, this.position.y, this.position.z);
+                    model.castShadow = true;
+                    model.receiveShadow = true;
+                    this.mesh = model;
+                    this.scene.add(this.mesh);
+                    console.log('✅ GLTF player model yüklendi');
+                    return; // GLTF model kullanıldı, procedural'a geçme
+                }
+            } catch (error) {
+                console.warn('Player modeli yüklenemedi, procedural kullanılıyor:', error);
+            }
+        }
+        
+        // Fallback: Procedural player model
         const material = new THREE.MeshStandardMaterial({ 
             color: 0x8b4513,
             roughness: 0.8,

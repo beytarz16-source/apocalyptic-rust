@@ -7,18 +7,28 @@ class ModelLoader {
     }
 
     initLoader() {
-        if (typeof THREE !== 'undefined' && THREE.GLTFLoader) {
-            this.gltfLoader = new THREE.GLTFLoader();
-            console.log('GLTF Loader initialized in ModelLoader');
-        } else {
-            console.warn('GLTF Loader yüklenemedi, tekrar denenecek...');
-            // GLTF Loader yüklenene kadar bekle
-            setTimeout(() => {
-                if (typeof THREE !== 'undefined' && THREE.GLTFLoader) {
-                    this.gltfLoader = new THREE.GLTFLoader();
-                    console.log('GLTF Loader initialized in ModelLoader (delayed)');
-                } else {
-                    console.error('GLTF Loader hala yüklenemedi!');
+        const tryInit = () => {
+            if (typeof THREE !== 'undefined' && THREE.GLTFLoader) {
+                this.gltfLoader = new THREE.GLTFLoader();
+                console.log('✅ GLTF Loader initialized in ModelLoader');
+                return true;
+            }
+            return false;
+        };
+
+        // Hemen dene
+        if (!tryInit()) {
+            console.warn('⚠️ GLTF Loader yüklenemedi, tekrar denenecek...');
+            // GLTF Loader yüklenene kadar bekle (max 5 saniye)
+            let attempts = 0;
+            const maxAttempts = 10;
+            const interval = setInterval(() => {
+                attempts++;
+                if (tryInit()) {
+                    clearInterval(interval);
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                    console.error('❌ GLTF Loader hala yüklenemedi! THREE:', typeof THREE, 'GLTFLoader:', typeof THREE !== 'undefined' ? THREE.GLTFLoader : 'undefined');
                 }
             }, 500);
         }
@@ -50,13 +60,33 @@ class ModelLoader {
         // URL'leri mutlak path'e çevir (yerel dosyalar için)
         const absoluteUrls = modelUrls.map(url => {
             if (url.startsWith('models/')) {
-                return url; // Relative path - tarayıcı otomatik çözümleyecek
+                // Relative path - tarayıcı otomatik çözümleyecek
+                // Eğer client klasörü root ise, path'i olduğu gibi bırak
+                return url;
             }
             return url;
         });
+        
+        console.log(`📂 Model path'leri:`, absoluteUrls);
 
         return new Promise((resolve, reject) => {
+            // GLTF Loader kontrolü
+            if (!this.gltfLoader) {
+                console.error(`❌ GLTF Loader henüz hazır değil! Model: ${modelType}/${modelName}`);
+                // Procedural model dene
+                const proceduralModel = this.createProceduralModel(modelType, modelName);
+                if (proceduralModel) {
+                    this.loadedModels[cacheKey] = proceduralModel;
+                    console.log(`⚠️ Procedural model kullanılıyor (GLTF Loader yok): ${modelType}/${modelName}`);
+                    resolve(proceduralModel.clone());
+                } else {
+                    resolve(null);
+                }
+                return;
+            }
+            
             console.log(`🔍 Model yükleniyor: ${modelType}/${modelName} - ${absoluteUrls[0]}`);
+            console.log(`📦 GLTF Loader durumu:`, this.gltfLoader ? 'Hazır' : 'Yok');
             
             // İlk URL'den dene
             this.gltfLoader.load(
