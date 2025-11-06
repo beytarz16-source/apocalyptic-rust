@@ -44,11 +44,10 @@ class ModelLoader {
         }
 
         // Özel durumlar: scene.bin eksik modeller için direkt procedural kullan
+        // Artık buildings ve player için scene.bin var, sadece car ve barriers için procedural kullan
         if ((modelType === 'object' && modelName === 'car') ||
             (modelType === 'object' && modelName === 'barriers') ||
-            (modelType === 'object' && modelName === 'tree') ||
-            (modelType === 'building') ||
-            (modelType === 'character' && modelName === 'player')) {
+            (modelType === 'object' && modelName === 'tree')) {
             const proceduralModel = this.createProceduralModel(modelType, modelName);
             if (proceduralModel) {
                 this.loadedModels[cacheKey] = proceduralModel;
@@ -185,17 +184,20 @@ class ModelLoader {
             },
             character: {
                 'player': [
+                    `models/characters/player/player.gltf`,
+                    `models/characters/player/player.glb`,
                     `models/characters/player.gltf`,
-                    `models/characters/player.glb`,
                     `models/characters/survivor.gltf`
                 ]
             },
             building: {
                 'apartment': [
+                    `models/buildings/apartment/apartment.gltf`,
                     `models/buildings/apartment.gltf`,
                     `models/buildings/apartment.glb`
                 ],
                 'warehouse': [
+                    `models/buildings/warehouse/warehouse.gltf`,
                     `models/buildings/warehouse.gltf`,
                     `models/buildings/warehouse.glb`
                 ]
