@@ -11,9 +11,27 @@ const JWT_SECRET = process.env.JWT_SECRET || 'apocalyptic-rust-secret-key-change
 // Initialize users file if it doesn't exist
 async function initUsersFile() {
   try {
-    await fs.access(USERS_FILE);
-  } catch {
-    await fs.writeFile(USERS_FILE, JSON.stringify([]), 'utf8');
+    // Check if data directory exists
+    const dataDir = path.dirname(USERS_FILE);
+    try {
+      await fs.access(dataDir);
+    } catch {
+      // Create data directory if it doesn't exist
+      await fs.mkdir(dataDir, { recursive: true });
+      console.log('Created data directory:', dataDir);
+    }
+
+    // Check if users file exists
+    try {
+      await fs.access(USERS_FILE);
+    } catch {
+      // Create users file if it doesn't exist
+      await fs.writeFile(USERS_FILE, JSON.stringify([]), 'utf8');
+      console.log('Created users file:', USERS_FILE);
+    }
+  } catch (error) {
+    console.error('Error initializing users file:', error);
+    throw error;
   }
 }
 
@@ -27,7 +45,15 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
-    const users = JSON.parse(await fs.readFile(USERS_FILE, 'utf8'));
+    // Check if users file exists and is readable
+    let users = [];
+    try {
+      const fileContent = await fs.readFile(USERS_FILE, 'utf8');
+      users = fileContent.trim() ? JSON.parse(fileContent) : [];
+    } catch (readError) {
+      console.log('Users file does not exist or is empty, creating new one');
+      users = [];
+    }
     
     if (users.find(u => u.username === username)) {
       return res.status(400).json({ error: 'Username already exists' });
@@ -48,7 +74,12 @@ router.post('/register', async (req, res) => {
     res.json({ token, username: newUser.username });
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Server error',
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
@@ -62,7 +93,16 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
-    const users = JSON.parse(await fs.readFile(USERS_FILE, 'utf8'));
+    // Check if users file exists and is readable
+    let users = [];
+    try {
+      const fileContent = await fs.readFile(USERS_FILE, 'utf8');
+      users = fileContent.trim() ? JSON.parse(fileContent) : [];
+    } catch (readError) {
+      console.log('Users file does not exist or is empty');
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
     const user = users.find(u => u.username === username);
 
     if (!user) {
@@ -78,7 +118,12 @@ router.post('/login', async (req, res) => {
     res.json({ token, username: user.username });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Server error',
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
