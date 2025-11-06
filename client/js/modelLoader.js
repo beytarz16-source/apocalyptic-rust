@@ -358,11 +358,6 @@ class ModelLoader {
         return group;
     }
 
-    createProceduralCharacter() {
-        // Zaten player.js'de var, burada sadece referans
-        return null;
-    }
-
     createProceduralChest() {
         // Zaten lootChest.js'de var
         return null;
