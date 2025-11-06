@@ -17,21 +17,43 @@ class Game {
     }
 
     init() {
+        console.log('Game init başlatılıyor...');
+        
         if (!window.auth || !window.auth.getToken()) {
             console.error('Not authenticated');
             return;
         }
 
-        this.setupScene();
-        this.setupLighting();
-        this.createWorld();
-        this.setupPlayer();
-        this.setupSocket();
-        this.setupControls();
-        this.animate();
+        try {
+            this.setupScene();
+            
+            // Scene oluşturuldu mu kontrol et
+            if (!this.scene) {
+                console.error('Scene oluşturulamadı!');
+                return;
+            }
+            
+            this.setupLighting();
+            this.createWorld();
+            this.setupPlayer();
+            this.setupSocket();
+            this.setupControls();
+            this.animate();
+            
+            console.log('Game başarıyla başlatıldı!');
+        } catch (error) {
+            console.error('Game init hatası:', error);
+            console.error('Stack trace:', error.stack);
+        }
     }
 
     setupScene() {
+        // THREE.js kontrolü
+        if (typeof THREE === 'undefined') {
+            console.error('THREE.js yüklenmedi!');
+            return;
+        }
+
         // Scene
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x2a2a2a);
@@ -55,8 +77,18 @@ class Game {
             }, 1000);
         }
 
-        // Particle system
-        this.particleSystem = new ParticleSystem(this.scene);
+        // Particle system (try-catch ile güvenli yükleme)
+        try {
+            if (typeof ParticleSystem !== 'undefined') {
+                this.particleSystem = new ParticleSystem(this.scene);
+            } else {
+                console.warn('ParticleSystem yüklenmedi, parçacık efektleri devre dışı');
+                this.particleSystem = null;
+            }
+        } catch (error) {
+            console.error('ParticleSystem hatası:', error);
+            this.particleSystem = null;
+        }
 
         // Camera
         this.camera = new THREE.PerspectiveCamera(
@@ -502,7 +534,16 @@ class Game {
     }
 
     setupPlayer() {
-        this.player = new Player(this.scene, this.camera);
+        try {
+            if (typeof Player === 'undefined') {
+                console.error('Player class yüklenmedi!');
+                return;
+            }
+            this.player = new Player(this.scene, this.camera);
+            console.log('Player oluşturuldu');
+        } catch (error) {
+            console.error('Player oluşturma hatası:', error);
+        }
     }
 
     setupSocket() {
@@ -862,6 +903,12 @@ class Game {
     animate() {
         this.animationId = requestAnimationFrame(() => this.animate());
 
+        // Scene ve renderer kontrolü
+        if (!this.scene || !this.camera || !this.renderer) {
+            console.warn('Scene, camera veya renderer eksik!');
+            return;
+        }
+
         const currentTime = performance.now();
         const deltaTime = Math.min((currentTime - this.lastUpdateTime) / 1000, 0.1);
         this.lastUpdateTime = currentTime;
@@ -913,9 +960,18 @@ class Game {
             }
         }
 
-        this.renderer.render(this.scene, this.camera);
+        // Render
+        try {
+            if (this.renderer && this.scene && this.camera) {
+                this.renderer.render(this.scene, this.camera);
+            }
+        } catch (error) {
+            console.error('Render hatası:', error);
+        }
     }
 }
 
+// Game instance oluştur
 window.game = new Game();
+console.log('Game instance oluşturuldu:', window.game);
 

@@ -110,8 +110,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-    <!-- GLTF Loader için script (ES6 module olmadan) -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <!-- GLTF Loader için script (ES6 module olmadan) - Opsiyonel, hata olursa devre dışı kalır -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js" onerror="console.warn('GLTF Loader yüklenemedi, basit modeller kullanılacak')"></script>
     <script>
         // Hata yakalama ve debug
         window.addEventListener('error', (e) => {

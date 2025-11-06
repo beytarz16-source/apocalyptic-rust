@@ -26,9 +26,12 @@ class Auth {
             });
         }
 
-        // Check if already logged in
+        // Check if already logged in - script'lerin yüklenmesi için bekle
         if (this.token && this.username) {
-            this.showGame();
+            // Script'lerin yüklenmesi için kısa bir gecikme
+            setTimeout(() => {
+                this.showGame();
+            }, 200);
         }
 
         console.log('Auth system initialized');
@@ -115,9 +118,35 @@ class Auth {
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('gameScreen').classList.remove('hidden');
         
-        // Initialize game after auth
-        if (window.game) {
-            window.game.init();
+        // Initialize game after auth - script yükleme sırası için bekle
+        const initGame = () => {
+            if (window.game) {
+                console.log('Game instance bulundu, init çağrılıyor...');
+                window.game.init();
+            } else {
+                console.warn('Game instance henüz yüklenmedi, bekleniyor...');
+                // Script yüklenene kadar bekle (max 5 saniye)
+                let attempts = 0;
+                const checkInterval = setInterval(() => {
+                    attempts++;
+                    if (window.game) {
+                        console.log('Game instance yüklendi, init çağrılıyor...');
+                        clearInterval(checkInterval);
+                        window.game.init();
+                    } else if (attempts > 50) { // 5 saniye sonra vazgeç
+                        console.error('Game instance yüklenemedi!');
+                        clearInterval(checkInterval);
+                    }
+                }, 100);
+            }
+        };
+        
+        // DOMContentLoaded bekleniyorsa bekle, değilse hemen çalıştır
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initGame);
+        } else {
+            // Script'lerin yüklenmesi için kısa bir gecikme
+            setTimeout(initGame, 100);
         }
     }
 
