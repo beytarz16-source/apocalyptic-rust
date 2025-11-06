@@ -48,33 +48,36 @@ class Player {
             metalness: 0.2
         });
 
-        // Head
-        const headGeometry = new THREE.SphereGeometry(0.25, 16, 16);
+        // Gerçekçi insan boyutları (metre cinsinden)
+        // Ortalama insan: ~1.75m boy, baş ~0.22m çap
+        
+        // Head (gerçekçi: ~0.22m çap, ~0.25m yükseklik)
+        const headGeometry = new THREE.SphereGeometry(0.11, 16, 16);
         const head = new THREE.Mesh(headGeometry, material);
-        head.position.y = 1.6;
+        head.position.y = 1.65; // Göz seviyesi ~1.6m
 
-        // Body (torso)
-        const bodyGeometry = new THREE.BoxGeometry(0.5, 0.8, 0.3);
+        // Body (torso) - gerçekçi: ~0.4m genişlik, ~0.5m derinlik, ~0.6m yükseklik
+        const bodyGeometry = new THREE.BoxGeometry(0.4, 0.6, 0.25);
         const body = new THREE.Mesh(bodyGeometry, material);
-        body.position.y = 1.0;
+        body.position.y = 1.2;
 
-        // Arms
-        const armGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.6, 8);
+        // Arms - gerçekçi: ~0.08m çap, ~0.65m uzunluk
+        const armGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.65, 8);
         const leftArm = new THREE.Mesh(armGeometry, material);
-        leftArm.position.set(-0.35, 1.0, 0);
-        leftArm.rotation.z = 0.3;
+        leftArm.position.set(-0.25, 1.15, 0);
+        leftArm.rotation.z = 0.2;
 
         const rightArm = new THREE.Mesh(armGeometry, material);
-        rightArm.position.set(0.35, 1.0, 0);
-        rightArm.rotation.z = -0.3;
+        rightArm.position.set(0.25, 1.15, 0);
+        rightArm.rotation.z = -0.2;
 
-        // Legs
-        const legGeometry = new THREE.CylinderGeometry(0.12, 0.12, 0.7, 8);
+        // Legs - gerçekçi: ~0.12m çap, ~0.85m uzunluk
+        const legGeometry = new THREE.CylinderGeometry(0.06, 0.06, 0.85, 8);
         const leftLeg = new THREE.Mesh(legGeometry, material);
-        leftLeg.position.set(-0.15, 0.35, 0);
+        leftLeg.position.set(-0.1, 0.425, 0);
 
         const rightLeg = new THREE.Mesh(legGeometry, material);
-        rightLeg.position.set(0.15, 0.35, 0);
+        rightLeg.position.set(0.1, 0.425, 0);
 
         // Group them together
         this.mesh = new THREE.Group();

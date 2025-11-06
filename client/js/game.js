@@ -14,6 +14,7 @@ class Game {
         this.particleSystem = null;
         this.textureLoader = null;
         this.gltfLoader = null;
+        this.lootChests = {}; // Sandık sistemi
     }
 
     init() {
@@ -195,6 +196,9 @@ class Game {
 
         // Çevre detayları (araçlar, çöp, vb.)
         this.createEnvironmentDetails();
+        
+        // Konteynerler, çöp kutuları, ağaçlar
+        this.createAdditionalObjects();
     }
 
     createRoads() {
@@ -271,12 +275,12 @@ class Game {
             this.scene.add(carGroup);
         });
 
-        // Çöp ve moloz
+        // Çöp ve moloz (gerçekçi boyutlar)
         for (let i = 0; i < 20; i++) {
             const debrisGeometry = new THREE.BoxGeometry(
-                0.5 + Math.random() * 1,
-                0.3 + Math.random() * 0.5,
-                0.5 + Math.random() * 1
+                0.3 + Math.random() * 0.5, // 0.3-0.8m
+                0.2 + Math.random() * 0.3, // 0.2-0.5m
+                0.3 + Math.random() * 0.5  // 0.3-0.8m
             );
             const debrisMaterial = new THREE.MeshStandardMaterial({
                 color: new THREE.Color().setHSL(0, 0, 0.2 + Math.random() * 0.3),
@@ -358,6 +362,134 @@ class Game {
             );
             fenceGroup.rotation.y = Math.random() * Math.PI * 2;
             this.scene.add(fenceGroup);
+        }
+    }
+
+    createAdditionalObjects() {
+        // Konteynerler (gerçekçi: 2.4m x 2.4m x 6m)
+        for (let i = 0; i < 8; i++) {
+            const containerGroup = new THREE.Group();
+            
+            // Ana gövde
+            const bodyGeometry = new THREE.BoxGeometry(2.4, 2.4, 6.0);
+            const bodyMaterial = new THREE.MeshStandardMaterial({
+                color: 0x444444,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 1.2;
+            containerGroup.add(body);
+            
+            // Kapı çerçevesi
+            const doorFrameGeometry = new THREE.BoxGeometry(2.0, 2.0, 0.1);
+            const doorFrame = new THREE.Mesh(doorFrameGeometry, new THREE.MeshStandardMaterial({ color: 0x333333 }));
+            doorFrame.position.set(0, 1.2, 3.0);
+            containerGroup.add(doorFrame);
+            
+            // Kaldırma köşeleri
+            const cornerGeometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+            const cornerMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00, metalness: 0.9 });
+            const corners = [
+                { x: -1.1, z: -2.9 },
+                { x: 1.1, z: -2.9 },
+                { x: -1.1, z: 2.9 },
+                { x: 1.1, z: 2.9 }
+            ];
+            corners.forEach(corner => {
+                const cornerMesh = new THREE.Mesh(cornerGeometry, cornerMaterial);
+                cornerMesh.position.set(corner.x, 2.4, corner.z);
+                containerGroup.add(cornerMesh);
+            });
+            
+            containerGroup.position.set(
+                (Math.random() - 0.5) * 150,
+                0,
+                (Math.random() - 0.5) * 150
+            );
+            containerGroup.rotation.y = Math.random() * Math.PI * 2;
+            this.scene.add(containerGroup);
+        }
+
+        // Çöp kutuları (gerçekçi: ~1m x 1m x 1.2m)
+        for (let i = 0; i < 25; i++) {
+            const trashGroup = new THREE.Group();
+            
+            // Ana gövde
+            const trashGeometry = new THREE.BoxGeometry(1.0, 1.2, 1.0);
+            const trashMaterial = new THREE.MeshStandardMaterial({
+                color: 0x333333,
+                roughness: 0.8
+            });
+            const trash = new THREE.Mesh(trashGeometry, trashMaterial);
+            trash.position.y = 0.6;
+            trashGroup.add(trash);
+            
+            // Kapak
+            const lidGeometry = new THREE.BoxGeometry(1.05, 0.1, 1.05);
+            const lid = new THREE.Mesh(lidGeometry, trashMaterial);
+            lid.position.y = 1.25;
+            trashGroup.add(lid);
+            
+            // Tutma kolu
+            const handleGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 8);
+            const handle = new THREE.Mesh(handleGeometry, new THREE.MeshStandardMaterial({ color: 0x666666 }));
+            handle.rotation.z = Math.PI / 2;
+            handle.position.set(0, 1.3, 0.5);
+            trashGroup.add(handle);
+            
+            trashGroup.position.set(
+                (Math.random() - 0.5) * 180,
+                0,
+                (Math.random() - 0.5) * 180
+            );
+            this.scene.add(trashGroup);
+        }
+
+        // Ağaçlar (gerçekçi: ~0.5-1m gövde çapı, ~5-10m yükseklik)
+        for (let i = 0; i < 50; i++) {
+            const treeGroup = new THREE.Group();
+            
+            // Gövde (gerçekçi: ~0.3-0.6m çap, ~4-8m yükseklik)
+            const trunkHeight = 4 + Math.random() * 4;
+            const trunkRadius = 0.15 + Math.random() * 0.15;
+            const trunkGeometry = new THREE.CylinderGeometry(trunkRadius, trunkRadius * 1.2, trunkHeight, 8);
+            const trunkMaterial = new THREE.MeshStandardMaterial({
+                color: 0x4a2c1a,
+                roughness: 0.9
+            });
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            trunk.position.y = trunkHeight / 2;
+            treeGroup.add(trunk);
+            
+            // Yapraklar (taç) - gerçekçi: ~3-6m çap
+            const crownSize = 2 + Math.random() * 2;
+            const crownGeometry = new THREE.ConeGeometry(crownSize, crownSize * 1.5, 8);
+            const crownMaterial = new THREE.MeshStandardMaterial({
+                color: 0x2d5016,
+                roughness: 0.8
+            });
+            const crown = new THREE.Mesh(crownGeometry, crownMaterial);
+            crown.position.y = trunkHeight + crownSize * 0.5;
+            treeGroup.add(crown);
+            
+            // İkinci katman (daha gerçekçi)
+            const crown2Size = crownSize * 0.7;
+            const crown2 = new THREE.Mesh(
+                new THREE.ConeGeometry(crown2Size, crown2Size * 1.2, 8),
+                crownMaterial
+            );
+            crown2.position.y = trunkHeight + crownSize * 0.3;
+            treeGroup.add(crown2);
+            
+            treeGroup.position.set(
+                (Math.random() - 0.5) * 200,
+                0,
+                (Math.random() - 0.5) * 200
+            );
+            treeGroup.castShadow = true;
+            treeGroup.receiveShadow = true;
+            this.scene.add(treeGroup);
         }
     }
 
@@ -566,9 +698,9 @@ class Game {
                 }
             });
 
-            // Initialize loot
+            // Initialize loot (sandık sistemi)
             data.loot.forEach(loot => {
-                this.addLootItem(loot);
+                this.addLootChest(loot);
             });
         });
 
@@ -604,7 +736,7 @@ class Game {
         });
 
         this.socket.on('loot:spawned', (data) => {
-            this.addLootItem(data);
+            this.addLootChest(data);
         });
     }
 
@@ -636,6 +768,18 @@ class Game {
         if (this.otherPlayers[playerId]) {
             this.scene.remove(this.otherPlayers[playerId].mesh);
             delete this.otherPlayers[playerId];
+        }
+    }
+
+    addLootChest(loot) {
+        // Sandık sistemi kullan
+        if (typeof LootChest !== 'undefined') {
+            const chest = new LootChest(this.scene, loot.position, loot);
+            this.lootChests[loot.id] = chest;
+            this.lootItems[loot.id] = loot; // Backend için
+        } else {
+            // Fallback: Eski sistem
+            this.addLootItem(loot);
         }
     }
 
@@ -828,13 +972,33 @@ class Game {
     interact() {
         if (!this.nearbyLoot) return;
 
-        // Ses efekti
-        if (window.audioManager) {
-            window.audioManager.playSound('loot', 0.5);
-        }
+        // Sandık sistemi kontrolü
+        if (this.lootChests[this.nearbyLoot]) {
+            const chest = this.lootChests[this.nearbyLoot];
+            if (!chest.isOpen) {
+                // Sandığı aç
+                chest.open();
+                return;
+            } else {
+                // Sandık açık, loot topla
+                if (this.socket) {
+                    this.socket.emit('player:loot', this.nearbyLoot);
+                }
+                // Sandığı kaldır
+                setTimeout(() => {
+                    chest.dispose();
+                    delete this.lootChests[this.nearbyLoot];
+                }, 1000);
+            }
+        } else {
+            // Eski sistem (fallback)
+            if (window.audioManager) {
+                window.audioManager.playSound('loot', 0.5);
+            }
 
-        if (this.socket) {
-            this.socket.emit('player:loot', this.nearbyLoot);
+            if (this.socket) {
+                this.socket.emit('player:loot', this.nearbyLoot);
+            }
         }
     }
 
@@ -877,23 +1041,43 @@ class Game {
     }
 
     checkLootProximity() {
-        this.nearbyLoot = null;
         const prompt = document.getElementById('interactionPrompt');
+        this.nearbyLoot = null;
 
-        Object.values(this.lootItems).forEach(loot => {
-            if (!loot.mesh) return;
+        // Sandık sistemi kontrolü
+        Object.entries(this.lootChests).forEach(([id, chest]) => {
+            if (!chest || !chest.chestGroup) return;
 
             const distance = Math.sqrt(
-                Math.pow(this.player.position.x - loot.position.x, 2) +
-                Math.pow(this.player.position.z - loot.position.z, 2)
+                Math.pow(this.player.position.x - chest.position.x, 2) +
+                Math.pow(this.player.position.z - chest.position.z, 2)
             );
 
             if (distance < this.interactionRange) {
-                this.nearbyLoot = loot.id;
+                this.nearbyLoot = id;
                 prompt.classList.remove('hidden');
+                prompt.textContent = chest.isOpen ? '[F] Topla' : '[F] Sandığı Aç';
                 return;
             }
         });
+
+        // Eski sistem (fallback)
+        if (!this.nearbyLoot) {
+            Object.values(this.lootItems).forEach(loot => {
+                if (!loot.mesh) return;
+
+                const distance = Math.sqrt(
+                    Math.pow(this.player.position.x - loot.position.x, 2) +
+                    Math.pow(this.player.position.z - loot.position.z, 2)
+                );
+
+                if (distance < this.interactionRange) {
+                    this.nearbyLoot = loot.id;
+                    prompt.classList.remove('hidden');
+                    return;
+                }
+            });
+        }
 
         if (!this.nearbyLoot) {
             prompt.classList.add('hidden');
