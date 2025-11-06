@@ -91,7 +91,7 @@ class Player {
         this.scene.add(this.mesh);
     }
 
-    createWeaponModel(weaponName) {
+    async createWeaponModel(weaponName) {
         if (this.weaponMesh) {
             this.scene.remove(this.weaponMesh);
             this.weaponMesh.geometry?.dispose();
@@ -163,7 +163,7 @@ class Player {
 
     async loadWeaponGLTF(weaponName) {
         if (!window.game || !window.game.modelLoader) {
-            this.createWeaponModel(weaponName);
+            await this.createWeaponModel(weaponName);
             return;
         }
 
@@ -193,11 +193,11 @@ class Player {
             } else {
                 // Model yüklenemedi, procedural kullan
                 console.log(`GLTF model bulunamadı, procedural model kullanılıyor: ${weaponName}`);
-                this.createWeaponModel(weaponName);
+                await this.createWeaponModel(weaponName);
             }
         } catch (error) {
             console.warn(`Model yükleme hatası: ${weaponName}`, error);
-            this.createWeaponModel(weaponName);
+            await this.createWeaponModel(weaponName);
         }
     }
 

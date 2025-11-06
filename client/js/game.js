@@ -514,37 +514,38 @@ class Game {
             if (!treeGroup) {
                 treeGroup = new THREE.Group();
             
-            // Gövde (gerçekçi: ~0.3-0.6m çap, ~4-8m yükseklik)
-            const trunkHeight = 4 + Math.random() * 4;
-            const trunkRadius = 0.15 + Math.random() * 0.15;
-            const trunkGeometry = new THREE.CylinderGeometry(trunkRadius, trunkRadius * 1.2, trunkHeight, 8);
-            const trunkMaterial = new THREE.MeshStandardMaterial({
-                color: 0x4a2c1a,
-                roughness: 0.9
-            });
-            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-            trunk.position.y = trunkHeight / 2;
-            treeGroup.add(trunk);
-            
-            // Yapraklar (taç) - gerçekçi: ~3-6m çap
-            const crownSize = 2 + Math.random() * 2;
-            const crownGeometry = new THREE.ConeGeometry(crownSize, crownSize * 1.5, 8);
-            const crownMaterial = new THREE.MeshStandardMaterial({
-                color: 0x2d5016,
-                roughness: 0.8
-            });
-            const crown = new THREE.Mesh(crownGeometry, crownMaterial);
-            crown.position.y = trunkHeight + crownSize * 0.5;
-            treeGroup.add(crown);
-            
-            // İkinci katman (daha gerçekçi)
-            const crown2Size = crownSize * 0.7;
-            const crown2 = new THREE.Mesh(
-                new THREE.ConeGeometry(crown2Size, crown2Size * 1.2, 8),
-                crownMaterial
-            );
-            crown2.position.y = trunkHeight + crownSize * 0.3;
-            treeGroup.add(crown2);
+                // Gövde (gerçekçi: ~0.3-0.6m çap, ~4-8m yükseklik)
+                const trunkHeight = 4 + Math.random() * 4;
+                const trunkRadius = 0.15 + Math.random() * 0.15;
+                const trunkGeometry = new THREE.CylinderGeometry(trunkRadius, trunkRadius * 1.2, trunkHeight, 8);
+                const trunkMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x4a2c1a,
+                    roughness: 0.9
+                });
+                const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+                trunk.position.y = trunkHeight / 2;
+                treeGroup.add(trunk);
+                
+                // Yapraklar (taç) - gerçekçi: ~3-6m çap
+                const crownSize = 2 + Math.random() * 2;
+                const crownGeometry = new THREE.ConeGeometry(crownSize, crownSize * 1.5, 8);
+                const crownMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x2d5016,
+                    roughness: 0.8
+                });
+                const crown = new THREE.Mesh(crownGeometry, crownMaterial);
+                crown.position.y = trunkHeight + crownSize * 0.5;
+                treeGroup.add(crown);
+                
+                // İkinci katman (daha gerçekçi)
+                const crown2Size = crownSize * 0.7;
+                const crown2 = new THREE.Mesh(
+                    new THREE.ConeGeometry(crown2Size, crown2Size * 1.2, 8),
+                    crownMaterial
+                );
+                crown2.position.y = trunkHeight + crownSize * 0.3;
+                treeGroup.add(crown2);
+            }
             
             treeGroup.position.set(
                 (Math.random() - 0.5) * 200,
