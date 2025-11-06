@@ -302,7 +302,16 @@ class Game {
 
             carGroup.position.set(pos.x, 0, pos.z);
             carGroup.rotation.y = pos.rotation;
+            carGroup.castShadow = true;
+            carGroup.receiveShadow = true;
             this.scene.add(carGroup);
+            
+            // Collision box ekle (araba: ~4m x 2m x 1.5m)
+            this.collisionObjects.push({
+                type: 'box',
+                position: { x: pos.x, y: 0.75, z: pos.z },
+                size: { width: 4, height: 1.5, depth: 2 }
+            });
         }
 
         // Çöp ve moloz (gerçekçi boyutlar)
@@ -403,13 +412,22 @@ class Game {
                 }
             }
             
-            barrierGroup.position.set(
-                (Math.random() - 0.5) * 180,
-                0,
-                (Math.random() - 0.5) * 180
-            );
+            const barrierPos = {
+                x: (Math.random() - 0.5) * 180,
+                z: (Math.random() - 0.5) * 180
+            };
+            barrierGroup.position.set(barrierPos.x, 0, barrierPos.z);
             barrierGroup.rotation.y = Math.random() * Math.PI * 2;
+            barrierGroup.castShadow = true;
+            barrierGroup.receiveShadow = true;
             this.scene.add(barrierGroup);
+            
+            // Collision box ekle (bariyer: ~1.5m x 0.8m x 5m)
+            this.collisionObjects.push({
+                type: 'box',
+                position: { x: barrierPos.x, y: 0.4, z: barrierPos.z },
+                size: { width: 5, height: 0.8, depth: 1.5 }
+            });
         }
     }
 
@@ -789,7 +807,9 @@ class Game {
                 return;
             }
             this.player = new Player(this.scene, this.camera);
-            console.log('Player oluşturuldu');
+            // Player'ı initialize et
+            await this.player.init();
+            console.log('Player oluşturuldu ve initialize edildi');
         } catch (error) {
             console.error('Player oluşturma hatası:', error);
         }

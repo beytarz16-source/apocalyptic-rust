@@ -421,30 +421,55 @@ class Player {
         
         for (const obj of window.game.collisionObjects) {
             if (obj.type === 'box') {
-                // Box collision
+                // AABB (Axis-Aligned Bounding Box) collision detection
                 const halfWidth = obj.size.width / 2;
                 const halfDepth = obj.size.depth / 2;
                 const halfHeight = obj.size.height / 2;
                 
-                // XZ düzleminde collision kontrolü
-                if (newX >= obj.position.x - halfWidth - playerRadius &&
-                    newX <= obj.position.x + halfWidth + playerRadius &&
-                    newZ >= obj.position.z - halfDepth - playerRadius &&
-                    newZ <= obj.position.z + halfDepth + playerRadius) {
-                    // Yükseklik kontrolü (sadece player'ın alt kısmı çarpışıyorsa)
-                    if (this.position.y <= obj.position.y + halfHeight) {
+                // Player'ın AABB'si
+                const playerMinX = newX - playerRadius;
+                const playerMaxX = newX + playerRadius;
+                const playerMinZ = newZ - playerRadius;
+                const playerMaxZ = newZ + playerRadius;
+                
+                // Objenin AABB'si
+                const objMinX = obj.position.x - halfWidth;
+                const objMaxX = obj.position.x + halfWidth;
+                const objMinZ = obj.position.z - halfDepth;
+                const objMaxZ = obj.position.z + halfDepth;
+                
+                // XZ düzleminde AABB kesişimi kontrolü
+                if (playerMinX <= objMaxX &&
+                    playerMaxX >= objMinX &&
+                    playerMinZ <= objMaxZ &&
+                    playerMaxZ >= objMinZ) {
+                    // Yükseklik kontrolü (player'ın alt kısmı objeye çarpıyorsa)
+                    const playerBottomY = this.position.y;
+                    const playerTopY = this.position.y + playerHeight;
+                    const objBottomY = obj.position.y - halfHeight;
+                    const objTopY = obj.position.y + halfHeight;
+                    
+                    if (playerBottomY <= objTopY && playerTopY >= objBottomY) {
                         return true; // Çarpışma var
                     }
                 }
             } else if (obj.type === 'cylinder') {
-                // Cylinder collision (ağaçlar için)
+                // Cylinder collision (ağaçlar için) - Circle collision in XZ plane
                 const dx = newX - obj.position.x;
                 const dz = newZ - obj.position.z;
                 const distance = Math.sqrt(dx * dx + dz * dz);
                 
-                if (distance < obj.size.radius + playerRadius) {
+                // Yarıçap toplamı
+                const combinedRadius = obj.size.radius + playerRadius;
+                
+                if (distance < combinedRadius) {
                     // Yükseklik kontrolü
-                    if (this.position.y <= obj.position.y + obj.size.height / 2) {
+                    const playerBottomY = this.position.y;
+                    const playerTopY = this.position.y + playerHeight;
+                    const objBottomY = obj.position.y - obj.size.height / 2;
+                    const objTopY = obj.position.y + obj.size.height / 2;
+                    
+                    if (playerBottomY <= objTopY && playerTopY >= objBottomY) {
                         return true; // Çarpışma var
                     }
                 }
