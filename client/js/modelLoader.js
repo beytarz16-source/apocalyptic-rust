@@ -45,7 +45,10 @@ class ModelLoader {
 
         // Özel durumlar: scene.bin eksik modeller için direkt procedural kullan
         if ((modelType === 'object' && modelName === 'car') ||
-            (modelType === 'object' && modelName === 'barriers')) {
+            (modelType === 'object' && modelName === 'barriers') ||
+            (modelType === 'object' && modelName === 'tree') ||
+            (modelType === 'building') ||
+            (modelType === 'character' && modelName === 'player')) {
             const proceduralModel = this.createProceduralModel(modelType, modelName);
             if (proceduralModel) {
                 this.loadedModels[cacheKey] = proceduralModel;
@@ -239,7 +242,10 @@ class ModelLoader {
             case 'weapon':
                 return this.createProceduralWeapon(modelName);
             case 'character':
-                return this.createProceduralCharacter();
+                if (modelName === 'player') {
+                    return this.createProceduralCharacter();
+                }
+                return null;
             case 'chest':
                 return this.createProceduralChest();
             case 'container':
@@ -248,11 +254,15 @@ class ModelLoader {
                 return this.createProceduralTrashBin();
             case 'tree':
                 return this.createProceduralTree();
+            case 'building':
+                return this.createProceduralBuilding(modelName);
             case 'object':
                 if (modelName === 'car') {
                     return this.createProceduralCar();
                 } else if (modelName === 'barriers') {
                     return this.createProceduralBarriers();
+                } else if (modelName === 'tree') {
+                    return this.createProceduralTree();
                 }
                 return null;
             default:

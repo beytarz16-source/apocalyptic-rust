@@ -375,9 +375,11 @@ class Player {
             this.isGrounded = true;
         }
 
-        // Update mesh position
-        this.mesh.position.set(this.position.x, this.position.y, this.position.z);
-        this.mesh.rotation.y = this.rotation.y;
+        // Update mesh position (mesh henüz oluşturulmamış olabilir)
+        if (this.mesh) {
+            this.mesh.position.set(this.position.x, this.position.y, this.position.z);
+            this.mesh.rotation.y = this.rotation.y;
+        }
 
         // Update camera (first person)
         this.camera.position.set(
