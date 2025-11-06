@@ -15,9 +15,10 @@ class Game {
         this.textureLoader = null;
         this.gltfLoader = null;
         this.lootChests = {}; // Sandık sistemi
+        this.modelLoader = null; // Model yükleme sistemi
     }
 
-    init() {
+    async init() {
         console.log('Game init başlatılıyor...');
         
         if (!window.auth || !window.auth.getToken()) {
@@ -34,9 +35,17 @@ class Game {
                 return;
             }
             
+            // ModelLoader'ı initialize et
+            if (typeof ModelLoader !== 'undefined') {
+                this.modelLoader = new ModelLoader(this.scene);
+                console.log('ModelLoader initialized');
+            } else {
+                console.warn('ModelLoader class yüklenmedi!');
+            }
+            
             this.setupLighting();
-            this.createWorld();
-            this.setupPlayer();
+            await this.createWorld();
+            await this.setupPlayer();
             this.setupSocket();
             this.setupControls();
             this.animate();
@@ -145,7 +154,7 @@ class Game {
         this.scene.add(pointLight2);
     }
 
-    createWorld() {
+    async createWorld() {
         // Ground with texture variation
         const groundGeometry = new THREE.PlaneGeometry(1000, 1000, 50, 50);
         
@@ -192,13 +201,13 @@ class Game {
         this.createRoads();
 
         // Buildings
-        this.createBuildings();
+        await this.createBuildings();
 
         // Çevre detayları (araçlar, çöp, vb.)
-        this.createEnvironmentDetails();
+        await this.createEnvironmentDetails();
         
         // Konteynerler, çöp kutuları, ağaçlar
-        this.createAdditionalObjects();
+        await this.createAdditionalObjects();
     }
 
     createRoads() {
@@ -233,47 +242,67 @@ class Game {
         this.scene.add(mainRoad);
     }
 
-    createEnvironmentDetails() {
+    async createEnvironmentDetails() {
         // Terk edilmiş araçlar
         const carPositions = [
             { x: 15, z: 5, rotation: Math.PI / 4 },
             { x: -20, z: 15, rotation: -Math.PI / 3 },
-            { x: 35, z: -25, rotation: Math.PI / 2 }
+            { x: 35, z: -25, rotation: Math.PI / 2 },
+            { x: -40, z: -30, rotation: Math.PI },
+            { x: 50, z: 20, rotation: -Math.PI / 4 }
         ];
 
-        carPositions.forEach(pos => {
-            const carGroup = new THREE.Group();
+        for (const pos of carPositions) {
+            let carGroup = null;
             
-            // Araba gövdesi
-            const bodyGeometry = new THREE.BoxGeometry(4, 1.5, 2);
-            const bodyMaterial = new THREE.MeshStandardMaterial({
-                color: 0x444444,
-                roughness: 0.8
-            });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            body.position.y = 0.75;
-            carGroup.add(body);
+            // GLTF model yükleme
+            if (this.modelLoader) {
+                try {
+                    const model = await this.modelLoader.loadModel('object', 'car');
+                    if (model) {
+                        model.scale.set(1, 1, 1);
+                        carGroup = model;
+                    }
+                } catch (error) {
+                    console.warn('Araba modeli yüklenemedi, procedural kullanılıyor');
+                }
+            }
+            
+            // Fallback: Procedural
+            if (!carGroup) {
+                carGroup = new THREE.Group();
+                
+                // Araba gövdesi
+                const bodyGeometry = new THREE.BoxGeometry(4, 1.5, 2);
+                const bodyMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x444444,
+                    roughness: 0.8
+                });
+                const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                body.position.y = 0.75;
+                carGroup.add(body);
 
-            // Tekerlekler
-            const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
-            const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
-            const positions = [
-                { x: 1.2, z: 1.1 },
-                { x: -1.2, z: 1.1 },
-                { x: 1.2, z: -1.1 },
-                { x: -1.2, z: -1.1 }
-            ];
-            positions.forEach(wheelPos => {
-                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-                wheel.rotation.z = Math.PI / 2;
-                wheel.position.set(wheelPos.x, 0.4, wheelPos.z);
-                carGroup.add(wheel);
-            });
+                // Tekerlekler
+                const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
+                const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+                const positions = [
+                    { x: 1.2, z: 1.1 },
+                    { x: -1.2, z: 1.1 },
+                    { x: 1.2, z: -1.1 },
+                    { x: -1.2, z: -1.1 }
+                ];
+                positions.forEach(wheelPos => {
+                    const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                    wheel.rotation.z = Math.PI / 2;
+                    wheel.position.set(wheelPos.x, 0.4, wheelPos.z);
+                    carGroup.add(wheel);
+                });
+            }
 
             carGroup.position.set(pos.x, 0, pos.z);
             carGroup.rotation.y = pos.rotation;
             this.scene.add(carGroup);
-        });
+        }
 
         // Çöp ve moloz (gerçekçi boyutlar)
         for (let i = 0; i < 20; i++) {
@@ -337,35 +366,53 @@ class Game {
 
         // Çitler ve bariyerler
         for (let i = 0; i < 10; i++) {
-            const fenceGroup = new THREE.Group();
-            const fenceLength = 5 + Math.random() * 5;
+            let barrierGroup = null;
             
-            for (let j = 0; j < fenceLength; j++) {
-                const postGeometry = new THREE.BoxGeometry(0.1, 1, 0.1);
-                const postMaterial = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
-                const post = new THREE.Mesh(postGeometry, postMaterial);
-                post.position.set(j * 0.5, 0.5, 0);
-                fenceGroup.add(post);
-                
-                if (j < fenceLength - 1) {
-                    const barGeometry = new THREE.BoxGeometry(0.5, 0.05, 0.05);
-                    const bar = new THREE.Mesh(barGeometry, postMaterial);
-                    bar.position.set(j * 0.5 + 0.25, 0.5, 0);
-                    fenceGroup.add(bar);
+            // GLTF bariyer modeli yükleme (her 3 bariyerden birini GLTF ile yükle)
+            if (this.modelLoader && i % 3 === 0) {
+                try {
+                    const model = await this.modelLoader.loadModel('object', 'barriers');
+                    if (model) {
+                        model.scale.set(1, 1, 1);
+                        barrierGroup = model;
+                    }
+                } catch (error) {
+                    console.warn('Bariyer modeli yüklenemedi, procedural kullanılıyor');
                 }
             }
             
-            fenceGroup.position.set(
+            // Fallback: Procedural
+            if (!barrierGroup) {
+                barrierGroup = new THREE.Group();
+                const fenceLength = 5 + Math.random() * 5;
+                
+                for (let j = 0; j < fenceLength; j++) {
+                    const postGeometry = new THREE.BoxGeometry(0.1, 1, 0.1);
+                    const postMaterial = new THREE.MeshStandardMaterial({ color: 0x4a4a4a });
+                    const post = new THREE.Mesh(postGeometry, postMaterial);
+                    post.position.set(j * 0.5, 0.5, 0);
+                    barrierGroup.add(post);
+                    
+                    if (j < fenceLength - 1) {
+                        const barGeometry = new THREE.BoxGeometry(0.5, 0.05, 0.05);
+                        const bar = new THREE.Mesh(barGeometry, postMaterial);
+                        bar.position.set(j * 0.5 + 0.25, 0.5, 0);
+                        barrierGroup.add(bar);
+                    }
+                }
+            }
+            
+            barrierGroup.position.set(
                 (Math.random() - 0.5) * 180,
                 0,
                 (Math.random() - 0.5) * 180
             );
-            fenceGroup.rotation.y = Math.random() * Math.PI * 2;
-            this.scene.add(fenceGroup);
+            barrierGroup.rotation.y = Math.random() * Math.PI * 2;
+            this.scene.add(barrierGroup);
         }
     }
 
-    createAdditionalObjects() {
+    async createAdditionalObjects() {
         // Konteynerler (gerçekçi: 2.4m x 2.4m x 6m)
         for (let i = 0; i < 8; i++) {
             const containerGroup = new THREE.Group();
@@ -448,7 +495,24 @@ class Game {
 
         // Ağaçlar (gerçekçi: ~0.5-1m gövde çapı, ~5-10m yükseklik)
         for (let i = 0; i < 50; i++) {
-            const treeGroup = new THREE.Group();
+            let treeGroup = null;
+
+            // GLTF model yükleme (her ağaç için farklı model olabilir)
+            if (this.modelLoader && i % 5 === 0) { // Her 5 ağaçtan birini GLTF ile yükle
+                try {
+                    const model = await this.modelLoader.loadModel('object', 'tree');
+                    if (model) {
+                        model.scale.set(1, 1, 1);
+                        treeGroup = model;
+                    }
+                } catch (error) {
+                    console.warn('Ağaç modeli yüklenemedi, procedural kullanılıyor');
+                }
+            }
+
+            // Fallback: Procedural
+            if (!treeGroup) {
+                treeGroup = new THREE.Group();
             
             // Gövde (gerçekçi: ~0.3-0.6m çap, ~4-8m yükseklik)
             const trunkHeight = 4 + Math.random() * 4;
@@ -493,7 +557,7 @@ class Game {
         }
     }
 
-    createBuildings() {
+    async createBuildings() {
         const buildingPositions = [
             { x: 20, z: 20, width: 10, height: 15, depth: 10, floors: 4 },
             { x: -30, z: 25, width: 12, height: 20, depth: 12, floors: 5 },
@@ -665,7 +729,7 @@ class Game {
         this.scene.add(buildingGroup);
     }
 
-    setupPlayer() {
+    async setupPlayer() {
         try {
             if (typeof Player === 'undefined') {
                 console.error('Player class yüklenmedi!');

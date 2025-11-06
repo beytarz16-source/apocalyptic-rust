@@ -33,9 +33,9 @@ class Player {
         this.init();
     }
 
-    init() {
+    async init() {
         // Create player model (more human-like)
-        this.createPlayerModel();
+        await this.createPlayerModel();
         
         // Setup controls
         this.setupControls();
@@ -99,8 +99,8 @@ class Player {
         }
 
         // GLTF loader varsa GLTF model yükle, yoksa basit model kullan
-        if (window.game && window.game.gltfLoader) {
-            this.loadWeaponGLTF(weaponName);
+        if (window.game && window.game.modelLoader) {
+            await this.loadWeaponGLTF(weaponName);
             return;
         }
 
@@ -161,25 +161,44 @@ class Player {
         this.scene.add(this.weaponMesh);
     }
 
-    loadWeaponGLTF(weaponName) {
-        // GLTF model yükleme (örnek - gerçek model dosyaları eklendiğinde)
-        // const modelPath = `models/weapons/${weaponName.toLowerCase()}.gltf`;
-        // window.game.gltfLoader.load(
-        //     modelPath,
-        //     (gltf) => {
-        //         this.weaponMesh = gltf.scene;
-        //         this.weaponMesh.scale.set(0.1, 0.1, 0.1);
-        //         this.scene.add(this.weaponMesh);
-        //     },
-        //     undefined,
-        //     (error) => {
-        //         console.warn('GLTF model yüklenemedi, basit model kullanılıyor:', error);
-        //         this.createWeaponModel(weaponName); // Fallback
-        //     }
-        // );
-        
-        // Şimdilik basit model kullan
-        this.createWeaponModel(weaponName);
+    async loadWeaponGLTF(weaponName) {
+        if (!window.game || !window.game.modelLoader) {
+            this.createWeaponModel(weaponName);
+            return;
+        }
+
+        try {
+            const model = await window.game.modelLoader.loadModel('weapon', weaponName);
+            
+            if (model) {
+                // Model yüklendi
+                if (this.weaponMesh) {
+                    this.scene.remove(this.weaponMesh);
+                    this.weaponMesh.geometry?.dispose();
+                    this.weaponMesh.material?.dispose();
+                }
+
+                // Ölçeklendirme (silah tipine göre)
+                if (weaponName === 'M4A1' || weaponName === 'AK-47') {
+                    model.scale.set(0.1, 0.1, 0.1);
+                } else if (weaponName === 'Glock 17') {
+                    model.scale.set(0.15, 0.15, 0.15);
+                } else {
+                    model.scale.set(0.1, 0.1, 0.1);
+                }
+
+                this.weaponMesh = model;
+                this.scene.add(this.weaponMesh);
+                console.log(`GLTF model yüklendi: ${weaponName}`);
+            } else {
+                // Model yüklenemedi, procedural kullan
+                console.log(`GLTF model bulunamadı, procedural model kullanılıyor: ${weaponName}`);
+                this.createWeaponModel(weaponName);
+            }
+        } catch (error) {
+            console.warn(`Model yükleme hatası: ${weaponName}`, error);
+            this.createWeaponModel(weaponName);
+        }
     }
 
     updateWeaponPosition() {

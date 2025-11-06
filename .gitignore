@@ -4,3 +4,15 @@ server/data/users.json
 .DS_Store
 .env
 .env.local
+temp_extract/
+temp_extract2/
+modeller/*.zip
+client/models/*_temp/
+
+# Model dosyaları - çok büyük, Git LFS kullanılmalı veya CDN'den yüklenmeli
+# Şimdilik ignore ediyoruz çünkü Render.com'da statik dosya olarak serve edilecek
+# client/models/**/*.gltf
+# client/models/**/*.glb
+# client/models/**/*.bin
+# client/models/**/*.jpeg
+# client/models/**/*.png

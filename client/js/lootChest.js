@@ -6,11 +6,31 @@ class LootChest {
         this.isOpen = false;
         this.chestGroup = null;
         this.lootMesh = null;
-        this.createChest();
+        this.createChest(); // Async çağrı ama await edilmiyor (constructor'da await kullanılamaz)
     }
 
-    createChest() {
+    async createChest() {
         this.chestGroup = new THREE.Group();
+
+        // Önce GLTF model yüklemeyi dene
+        if (window.game && window.game.modelLoader) {
+            try {
+                const model = await window.game.modelLoader.loadModel('chest', 'loot_chest');
+                if (model) {
+                    model.scale.set(1, 1, 1);
+                    model.position.set(this.position.x, 0, this.position.z);
+                    this.chestGroup = model;
+                    this.scene.add(this.chestGroup);
+                    this.lid = this.findLidInModel(model);
+                    console.log('GLTF sandık modeli yüklendi');
+                    return;
+                }
+            } catch (error) {
+                console.warn('GLTF sandık modeli yüklenemedi, procedural kullanılıyor:', error);
+            }
+        }
+
+        // Fallback: Procedural model
 
         // Sandık gövdesi (gerçekçi: ~1m x 0.6m x 0.8m)
         const bodyGeometry = new THREE.BoxGeometry(1.0, 0.6, 0.8);
@@ -81,6 +101,17 @@ class LootChest {
 
         this.chestGroup.position.set(this.position.x, 0, this.position.z);
         this.scene.add(this.chestGroup);
+    }
+
+    findLidInModel(model) {
+        // GLTF modelinde kapağı bul
+        let lid = null;
+        model.traverse((child) => {
+            if (child.name && (child.name.toLowerCase().includes('lid') || child.name.toLowerCase().includes('cover'))) {
+                lid = child;
+            }
+        });
+        return lid || this.lid; // Fallback
     }
 
     createLootContent() {
