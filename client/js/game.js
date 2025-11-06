@@ -586,14 +586,17 @@ class Game {
         ];
 
         for (const pos of buildingPositions) {
-            // GLTF model yükleme dene
+            // GLTF model yükleme dene (scene.bin eksik olduğu için procedural kullanılacak)
             if (this.modelLoader) {
                 try {
                     const model = await this.modelLoader.loadModel('building', pos.type);
                     if (model) {
-                        // Model yüklendi, pozisyon ve ölçek ayarla
+                        // Model yüklendi (procedural olabilir), pozisyon ve ölçek ayarla
                         model.position.set(pos.x, 0, pos.z);
-                        model.scale.set(pos.width / 10, pos.height / 10, pos.depth / 10);
+                        // Procedural model ise ölçeklendirme gerekmez
+                        if (pos.width && pos.height && pos.depth) {
+                            model.scale.set(pos.width / 10, pos.height / 10, pos.depth / 10);
+                        }
                         model.castShadow = true;
                         model.receiveShadow = true;
                         this.scene.add(model);
@@ -603,8 +606,8 @@ class Game {
                             position: { x: pos.x, y: pos.height / 2, z: pos.z },
                             size: { width: pos.width, height: pos.height, depth: pos.depth }
                         });
-                        console.log(`✅ GLTF bina yüklendi: ${pos.type} at (${pos.x}, ${pos.z})`);
-                        continue; // Bu bina için GLTF kullanıldı, procedural'a geçme
+                        console.log(`✅ Bina yüklendi (procedural): ${pos.type} at (${pos.x}, ${pos.z})`);
+                        continue; // Bu bina için model kullanıldı
                     }
                 } catch (error) {
                     console.warn(`Bina modeli yüklenemedi (${pos.type}), procedural kullanılıyor:`, error);
