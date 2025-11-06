@@ -29,8 +29,9 @@ class Player {
         this.weaponOffset = { x: 0.3, y: -0.2, z: -0.5 }; // Silah pozisyonu
         this.weaponMesh = null;
         this.armorMesh = null;
-
-        this.init();
+        
+        // init() artık game.js'den çağrılıyor, buradan çağrılmıyor
+        // this.init(); // Kaldırıldı - game.js'de await ile çağrılıyor
     }
 
     async init() {
@@ -42,16 +43,26 @@ class Player {
     }
 
     async createPlayerModel() {
-        // GLTF model yükleme dene
+        // ModelLoader procedural model döndürebilir, bu durumda GLTF değildir
+        // Procedural model kullanıldığını log'dan anlayabiliriz ama yine de model yüklenmeye çalışalım
         if (window.game && window.game.modelLoader) {
             try {
                 const model = await window.game.modelLoader.loadModel('character', 'player');
                 if (model) {
-                    // Model yüklendi
+                    // Model yüklendi (procedural veya GLTF olabilir)
                     if (this.mesh) {
                         this.scene.remove(this.mesh);
-                        this.mesh.geometry?.dispose();
-                        this.mesh.material?.dispose();
+                        // Mesh bir group ise dispose edemeyiz, sadece scene'den kaldırırız
+                        if (this.mesh.geometry) {
+                            this.mesh.geometry.dispose();
+                        }
+                        if (this.mesh.material) {
+                            if (Array.isArray(this.mesh.material)) {
+                                this.mesh.material.forEach(mat => mat.dispose());
+                            } else {
+                                this.mesh.material.dispose();
+                            }
+                        }
                     }
                     
                     // Ölçeklendirme (gerçekçi insan boyutu: ~1.75m)
@@ -61,15 +72,15 @@ class Player {
                     model.receiveShadow = true;
                     this.mesh = model;
                     this.scene.add(this.mesh);
-                    console.log('✅ GLTF player model yüklendi');
-                    return; // GLTF model kullanıldı, procedural'a geçme
+                    console.log('✅ Player model yüklendi (procedural veya GLTF)');
+                    return; // Model kullanıldı, procedural fallback'e geçme
                 }
             } catch (error) {
                 console.warn('Player modeli yüklenemedi, procedural kullanılıyor:', error);
             }
         }
         
-        // Fallback: Procedural player model
+        // Fallback: Manuel Procedural player model (ModelLoader başarısız olursa)
         const material = new THREE.MeshStandardMaterial({ 
             color: 0x8b4513,
             roughness: 0.8,
@@ -285,11 +296,17 @@ class Player {
     setupControls() {
         // Keyboard
         document.addEventListener('keydown', (e) => {
-            this.keys[e.key.toLowerCase()] = true;
+            // e.key undefined olabilir (bazı özel tuşlar için)
+            if (e.key) {
+                this.keys[e.key.toLowerCase()] = true;
+            }
         });
 
         document.addEventListener('keyup', (e) => {
-            this.keys[e.key.toLowerCase()] = false;
+            // e.key undefined olabilir (bazı özel tuşlar için)
+            if (e.key) {
+                this.keys[e.key.toLowerCase()] = false;
+            }
         });
 
         // Mouse
