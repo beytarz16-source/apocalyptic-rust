@@ -16,6 +16,7 @@ class Game {
         this.gltfLoader = null;
         this.lootChests = {}; // Sandık sistemi
         this.modelLoader = null; // Model yükleme sistemi
+        this.collisionObjects = []; // Collision detection için objeler
     }
 
     async init() {
@@ -449,13 +450,20 @@ class Game {
                 containerGroup.add(cornerMesh);
             });
             
-            containerGroup.position.set(
-                (Math.random() - 0.5) * 150,
-                0,
-                (Math.random() - 0.5) * 150
-            );
+            const containerPos = {
+                x: (Math.random() - 0.5) * 150,
+                z: (Math.random() - 0.5) * 150
+            };
+            containerGroup.position.set(containerPos.x, 0, containerPos.z);
             containerGroup.rotation.y = Math.random() * Math.PI * 2;
             this.scene.add(containerGroup);
+            
+            // Collision box ekle (konteyner: 2.4m x 2.4m x 6m)
+            this.collisionObjects.push({
+                type: 'box',
+                position: { x: containerPos.x, y: 1.2, z: containerPos.z },
+                size: { width: 2.4, height: 2.4, depth: 6.0 }
+            });
         }
 
         // Çöp kutuları (gerçekçi: ~1m x 1m x 1.2m)
@@ -547,14 +555,23 @@ class Game {
                 treeGroup.add(crown2);
             }
             
-            treeGroup.position.set(
-                (Math.random() - 0.5) * 200,
-                0,
-                (Math.random() - 0.5) * 200
-            );
+            const treePos = {
+                x: (Math.random() - 0.5) * 200,
+                z: (Math.random() - 0.5) * 200
+            };
+            treeGroup.position.set(treePos.x, 0, treePos.z);
             treeGroup.castShadow = true;
             treeGroup.receiveShadow = true;
             this.scene.add(treeGroup);
+            
+            // Collision box ekle (ağaç: ~2-4m çap, ~4-8m yükseklik)
+            const treeRadius = 1.5 + Math.random() * 1.5; // Taç genişliği
+            const treeHeight = 4 + Math.random() * 4;
+            this.collisionObjects.push({
+                type: 'cylinder',
+                position: { x: treePos.x, y: treeHeight / 2, z: treePos.z },
+                size: { radius: treeRadius, height: treeHeight }
+            });
         }
     }
 
@@ -580,6 +597,12 @@ class Game {
                         model.castShadow = true;
                         model.receiveShadow = true;
                         this.scene.add(model);
+                        // Collision box ekle
+                        this.collisionObjects.push({
+                            type: 'box',
+                            position: { x: pos.x, y: pos.height / 2, z: pos.z },
+                            size: { width: pos.width, height: pos.height, depth: pos.depth }
+                        });
                         console.log(`✅ GLTF bina yüklendi: ${pos.type} at (${pos.x}, ${pos.z})`);
                         continue; // Bu bina için GLTF kullanıldı, procedural'a geçme
                     }
@@ -747,6 +770,13 @@ class Game {
 
         buildingGroup.position.set(pos.x, 0, pos.z);
         this.scene.add(buildingGroup);
+        
+        // Collision box ekle
+        this.collisionObjects.push({
+            type: 'box',
+            position: { x: pos.x, y: pos.height / 2, z: pos.z },
+            size: { width: pos.width, height: pos.height, depth: pos.depth }
+        });
     }
 
     async setupPlayer() {

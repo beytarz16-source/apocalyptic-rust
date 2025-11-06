@@ -330,8 +330,17 @@ class Player {
         rotationMatrix.makeRotationY(this.rotation.y);
         moveVector.applyMatrix4(rotationMatrix);
 
-        this.position.x += moveVector.x;
-        this.position.z += moveVector.z;
+        // Collision detection - önce yeni pozisyonu kontrol et
+        const newX = this.position.x + moveVector.x;
+        const newZ = this.position.z + moveVector.z;
+        
+        if (this.checkCollision(newX, newZ)) {
+            // Çarpışma var, hareketi engelle
+            return;
+        }
+        
+        this.position.x = newX;
+        this.position.z = newZ;
 
         // Ayak sesi efekti (koşarken veya yürürken)
         if (moveVector.length() > 0 && this.isGrounded) {
@@ -398,6 +407,49 @@ class Player {
         if (this.thirst <= 0) {
             this.health = Math.max(0, this.health - 2 * deltaTime);
         }
+    }
+
+    checkCollision(newX, newZ) {
+        if (!window.game || !window.game.collisionObjects) {
+            return false;
+        }
+        
+        const playerRadius = 0.4; // Player collision radius (~0.8m çap)
+        const playerHeight = 1.6; // Player yüksekliği
+        
+        for (const obj of window.game.collisionObjects) {
+            if (obj.type === 'box') {
+                // Box collision
+                const halfWidth = obj.size.width / 2;
+                const halfDepth = obj.size.depth / 2;
+                const halfHeight = obj.size.height / 2;
+                
+                // XZ düzleminde collision kontrolü
+                if (newX >= obj.position.x - halfWidth - playerRadius &&
+                    newX <= obj.position.x + halfWidth + playerRadius &&
+                    newZ >= obj.position.z - halfDepth - playerRadius &&
+                    newZ <= obj.position.z + halfDepth + playerRadius) {
+                    // Yükseklik kontrolü (sadece player'ın alt kısmı çarpışıyorsa)
+                    if (this.position.y <= obj.position.y + halfHeight) {
+                        return true; // Çarpışma var
+                    }
+                }
+            } else if (obj.type === 'cylinder') {
+                // Cylinder collision (ağaçlar için)
+                const dx = newX - obj.position.x;
+                const dz = newZ - obj.position.z;
+                const distance = Math.sqrt(dx * dx + dz * dz);
+                
+                if (distance < obj.size.radius + playerRadius) {
+                    // Yükseklik kontrolü
+                    if (this.position.y <= obj.position.y + obj.size.height / 2) {
+                        return true; // Çarpışma var
+                    }
+                }
+            }
+        }
+        
+        return false; // Çarpışma yok
     }
 
     takeDamage(amount) {
