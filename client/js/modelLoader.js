@@ -43,6 +43,17 @@ class ModelLoader {
             return this.loadedModels[cacheKey].clone();
         }
 
+        // Özel durumlar: scene.bin eksik modeller için direkt procedural kullan
+        if ((modelType === 'object' && modelName === 'car') ||
+            (modelType === 'object' && modelName === 'barriers')) {
+            const proceduralModel = this.createProceduralModel(modelType, modelName);
+            if (proceduralModel) {
+                this.loadedModels[cacheKey] = proceduralModel;
+                console.log(`⚠️ Procedural model kullanılıyor (scene.bin eksik): ${modelType}/${modelName}`);
+                return proceduralModel.clone();
+            }
+        }
+
         // Model URL'leri (ücretsiz kaynaklardan)
         const modelUrls = this.getModelUrl(modelType, modelName);
         
