@@ -91,6 +91,11 @@ class WeaponSystem {
         this.currentAmmo = Math.min(this.equippedWeapon.magazineSize, ammoCount);
         this.totalAmmo = ammoCount - this.currentAmmo;
         
+        // Karaktere silah modeli ekle
+        if (window.game && window.game.player) {
+            window.game.player.createWeaponModel(weaponName);
+        }
+        
         this.updateAmmoDisplay();
         return true;
     }

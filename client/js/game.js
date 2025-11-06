@@ -89,8 +89,8 @@ class Game {
     }
 
     createWorld() {
-        // Ground
-        const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
+        // Ground with texture variation
+        const groundGeometry = new THREE.PlaneGeometry(1000, 1000, 50, 50);
         const groundMaterial = new THREE.MeshStandardMaterial({
             color: 0x3a3a3a,
             roughness: 0.9,
@@ -101,48 +101,242 @@ class Game {
         ground.receiveShadow = true;
         this.scene.add(ground);
 
+        // Yollar (opsiyonel)
+        this.createRoads();
+
         // Buildings
         this.createBuildings();
+
+        // Çevre detayları (araçlar, çöp, vb.)
+        this.createEnvironmentDetails();
+    }
+
+    createRoads() {
+        // Ana yol
+        const roadGeometry = new THREE.PlaneGeometry(200, 8);
+        const roadMaterial = new THREE.MeshStandardMaterial({
+            color: 0x2a2a2a,
+            roughness: 0.7
+        });
+        const mainRoad = new THREE.Mesh(roadGeometry, roadMaterial);
+        mainRoad.rotation.x = -Math.PI / 2;
+        mainRoad.position.set(0, 0.01, 0);
+        this.scene.add(mainRoad);
+
+        // Yol çizgileri
+        for (let i = -100; i < 100; i += 10) {
+            const lineGeometry = new THREE.PlaneGeometry(2, 0.2);
+            const lineMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00 });
+            const line = new THREE.Mesh(lineGeometry, lineMaterial);
+            line.rotation.x = -Math.PI / 2;
+            line.position.set(i, 0.02, 0);
+            this.scene.add(line);
+        }
+    }
+
+    createEnvironmentDetails() {
+        // Terk edilmiş araçlar
+        const carPositions = [
+            { x: 15, z: 5, rotation: Math.PI / 4 },
+            { x: -20, z: 15, rotation: -Math.PI / 3 },
+            { x: 35, z: -25, rotation: Math.PI / 2 }
+        ];
+
+        carPositions.forEach(pos => {
+            const carGroup = new THREE.Group();
+            
+            // Araba gövdesi
+            const bodyGeometry = new THREE.BoxGeometry(4, 1.5, 2);
+            const bodyMaterial = new THREE.MeshStandardMaterial({
+                color: 0x444444,
+                roughness: 0.8
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 0.75;
+            carGroup.add(body);
+
+            // Tekerlekler
+            const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
+            const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+            const positions = [
+                { x: 1.2, z: 1.1 },
+                { x: -1.2, z: 1.1 },
+                { x: 1.2, z: -1.1 },
+                { x: -1.2, z: -1.1 }
+            ];
+            positions.forEach(wheelPos => {
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.position.set(wheelPos.x, 0.4, wheelPos.z);
+                carGroup.add(wheel);
+            });
+
+            carGroup.position.set(pos.x, 0, pos.z);
+            carGroup.rotation.y = pos.rotation;
+            this.scene.add(carGroup);
+        });
+
+        // Çöp ve moloz
+        for (let i = 0; i < 20; i++) {
+            const debrisGeometry = new THREE.BoxGeometry(
+                0.5 + Math.random() * 1,
+                0.3 + Math.random() * 0.5,
+                0.5 + Math.random() * 1
+            );
+            const debrisMaterial = new THREE.MeshStandardMaterial({
+                color: new THREE.Color().setHSL(0, 0, 0.2 + Math.random() * 0.3),
+                roughness: 0.9
+            });
+            const debris = new THREE.Mesh(debrisGeometry, debrisMaterial);
+            debris.position.set(
+                (Math.random() - 0.5) * 200,
+                0.15,
+                (Math.random() - 0.5) * 200
+            );
+            debris.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+            this.scene.add(debris);
+        }
     }
 
     createBuildings() {
         const buildingPositions = [
-            { x: 20, z: 20, width: 10, height: 15, depth: 10 },
-            { x: -30, z: 25, width: 12, height: 20, depth: 12 },
-            { x: 40, z: -30, width: 15, height: 18, depth: 15 },
-            { x: -25, z: -40, width: 8, height: 12, depth: 8 }
+            { x: 20, z: 20, width: 10, height: 15, depth: 10, floors: 4 },
+            { x: -30, z: 25, width: 12, height: 20, depth: 12, floors: 5 },
+            { x: 40, z: -30, width: 15, height: 18, depth: 15, floors: 4 },
+            { x: -25, z: -40, width: 8, height: 12, depth: 8, floors: 3 },
+            { x: 50, z: 30, width: 14, height: 16, depth: 14, floors: 4 },
+            { x: -40, z: -20, width: 10, height: 14, depth: 10, floors: 3 }
         ];
 
         buildingPositions.forEach(pos => {
-            const geometry = new THREE.BoxGeometry(pos.width, pos.height, pos.depth);
-            const material = new THREE.MeshStandardMaterial({
-                color: 0x555555,
-                roughness: 0.8,
-                metalness: 0.2
-            });
-            const building = new THREE.Mesh(geometry, material);
-            building.position.set(pos.x, pos.height / 2, pos.z);
-            building.castShadow = true;
-            building.receiveShadow = true;
-            this.scene.add(building);
-
-            // Add windows
-            for (let i = 0; i < 3; i++) {
-                const windowGeometry = new THREE.PlaneGeometry(1, 1);
-                const windowMaterial = new THREE.MeshBasicMaterial({
-                    color: 0x1a1a1a,
-                    transparent: true,
-                    opacity: 0.8
-                });
-                const window = new THREE.Mesh(windowGeometry, windowMaterial);
-                window.position.set(
-                    pos.x + (Math.random() - 0.5) * pos.width,
-                    pos.height * 0.3 + i * 4,
-                    pos.z + pos.depth / 2 + 0.01
-                );
-                this.scene.add(window);
-            }
+            this.createDetailedBuilding(pos);
         });
+    }
+
+    createDetailedBuilding(pos) {
+        const buildingGroup = new THREE.Group();
+
+        // Ana bina gövdesi
+        const geometry = new THREE.BoxGeometry(pos.width, pos.height, pos.depth);
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x555555,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const building = new THREE.Mesh(geometry, material);
+        building.position.y = pos.height / 2;
+        building.castShadow = true;
+        building.receiveShadow = true;
+        buildingGroup.add(building);
+
+        // Katlar arası çizgiler
+        for (let i = 1; i < pos.floors; i++) {
+            const floorLine = new THREE.Mesh(
+                new THREE.BoxGeometry(pos.width + 0.1, 0.1, pos.depth + 0.1),
+                new THREE.MeshStandardMaterial({ color: 0x333333 })
+            );
+            floorLine.position.y = (pos.height / pos.floors) * i;
+            buildingGroup.add(floorLine);
+        }
+
+        // Pencereler (daha detaylı)
+        const windowSpacing = pos.width / 4;
+        const windowHeight = 1.5;
+        const windowWidth = 0.8;
+        
+        for (let floor = 1; floor <= pos.floors; floor++) {
+            for (let side = 0; side < 4; side++) {
+                const windowCount = Math.floor(pos.width / windowSpacing);
+                for (let i = 0; i < windowCount; i++) {
+                    const windowGeometry = new THREE.PlaneGeometry(windowWidth, windowHeight);
+                    const windowFrame = new THREE.Mesh(
+                        new THREE.PlaneGeometry(windowWidth + 0.1, windowHeight + 0.1),
+                        new THREE.MeshStandardMaterial({ color: 0x2a2a2a })
+                    );
+                    
+                    const windowGlass = new THREE.Mesh(
+                        windowGeometry,
+                        new THREE.MeshStandardMaterial({
+                            color: 0x1a1a1a,
+                            transparent: true,
+                            opacity: 0.6,
+                            emissive: 0x000000,
+                            emissiveIntensity: Math.random() * 0.3 // Bazı pencereler hafif ışıklı
+                        })
+                    );
+
+                    let x, z, rotation;
+                    if (side === 0) { // Ön
+                        x = (i - windowCount / 2) * windowSpacing;
+                        z = pos.depth / 2 + 0.01;
+                        rotation = 0;
+                    } else if (side === 1) { // Sağ
+                        x = pos.width / 2 + 0.01;
+                        z = (i - windowCount / 2) * windowSpacing;
+                        rotation = Math.PI / 2;
+                    } else if (side === 2) { // Arka
+                        x = (i - windowCount / 2) * windowSpacing;
+                        z = -pos.depth / 2 - 0.01;
+                        rotation = Math.PI;
+                    } else { // Sol
+                        x = -pos.width / 2 - 0.01;
+                        z = (i - windowCount / 2) * windowSpacing;
+                        rotation = -Math.PI / 2;
+                    }
+
+                    windowFrame.position.set(x, (pos.height / pos.floors) * (floor - 0.5), z);
+                    windowFrame.rotation.y = rotation;
+                    windowGlass.position.set(x, (pos.height / pos.floors) * (floor - 0.5), z + 0.001);
+                    windowGlass.rotation.y = rotation;
+
+                    buildingGroup.add(windowFrame);
+                    buildingGroup.add(windowGlass);
+                }
+            }
+        }
+
+        // Kapı
+        const doorGeometry = new THREE.PlaneGeometry(1.5, 2.5);
+        const doorMaterial = new THREE.MeshStandardMaterial({
+            color: 0x3a2a1a,
+            roughness: 0.9
+        });
+        const door = new THREE.Mesh(doorGeometry, doorMaterial);
+        door.position.set(0, 1.25, pos.depth / 2 + 0.01);
+        buildingGroup.add(door);
+
+        // Çatı detayları
+        const roofGeometry = new THREE.BoxGeometry(pos.width + 0.5, 0.5, pos.depth + 0.5);
+        const roofMaterial = new THREE.MeshStandardMaterial({
+            color: 0x444444,
+            roughness: 0.9
+        });
+        const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+        roof.position.y = pos.height + 0.25;
+        buildingGroup.add(roof);
+
+        // Hasar efektleri (rastgele)
+        if (Math.random() > 0.5) {
+            const damageGeometry = new THREE.BoxGeometry(2, 2, 0.2);
+            const damageMaterial = new THREE.MeshStandardMaterial({
+                color: 0x000000,
+                roughness: 1.0
+            });
+            const damage = new THREE.Mesh(damageGeometry, damageMaterial);
+            damage.position.set(
+                (Math.random() - 0.5) * pos.width,
+                Math.random() * pos.height,
+                pos.depth / 2 + 0.1
+            );
+            buildingGroup.add(damage);
+        }
+
+        buildingGroup.position.set(pos.x, 0, pos.z);
+        this.scene.add(buildingGroup);
     }
 
     setupPlayer() {
@@ -243,30 +437,88 @@ class Game {
     }
 
     addLootItem(loot) {
-        const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-        const material = new THREE.MeshStandardMaterial({ 
-            color: 0x00ff00,
-            emissive: 0x004400
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(loot.position.x, loot.position.y + 0.25, loot.position.z);
-        mesh.castShadow = true;
-        this.scene.add(mesh);
+        const lootGroup = new THREE.Group();
 
-        // Add glow effect
-        const glowGeometry = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+        // Loot tipine göre görsel
+        if (loot.item.type === 'weapon') {
+            // Silah kutusu
+            const boxGeometry = new THREE.BoxGeometry(0.4, 0.3, 0.6);
+            const boxMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x8b4513,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+            const box = new THREE.Mesh(boxGeometry, boxMaterial);
+            box.position.y = 0.15;
+            lootGroup.add(box);
+
+            // Kilit
+            const lockGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.05);
+            const lockMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x444444,
+                metalness: 0.9
+            });
+            const lock = new THREE.Mesh(lockGeometry, lockMaterial);
+            lock.position.set(0, 0.2, 0.3);
+            lootGroup.add(lock);
+        } else if (loot.item.type === 'ammo') {
+            // Mühimmat kutusu
+            const ammoGeometry = new THREE.BoxGeometry(0.3, 0.2, 0.3);
+            const ammoMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xffaa00,
+                roughness: 0.5
+            });
+            const ammoBox = new THREE.Mesh(ammoGeometry, ammoMaterial);
+            ammoBox.position.y = 0.1;
+            lootGroup.add(ammoBox);
+        } else if (loot.item.type === 'food' || loot.item.type === 'water') {
+            // Yiyecek/içecek
+            const itemGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.2, 8);
+            const itemMaterial = new THREE.MeshStandardMaterial({ 
+                color: loot.item.type === 'food' ? 0xff6600 : 0x0066ff,
+                roughness: 0.3
+            });
+            const item = new THREE.Mesh(itemGeometry, itemMaterial);
+            item.rotation.x = Math.PI / 2;
+            item.position.y = 0.1;
+            lootGroup.add(item);
+        } else {
+            // Diğer eşyalar için genel kutu
+            const defaultGeometry = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+            const defaultMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x666666,
+                roughness: 0.6
+            });
+            const defaultBox = new THREE.Mesh(defaultGeometry, defaultMaterial);
+            defaultBox.position.y = 0.15;
+            lootGroup.add(defaultBox);
+        }
+
+        // Glow efekti
+        const glowGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
         const glowMaterial = new THREE.MeshBasicMaterial({
             color: 0x00ff00,
             transparent: true,
-            opacity: 0.3
+            opacity: 0.2
         });
         const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-        glow.position.copy(mesh.position);
-        this.scene.add(glow);
+        glow.position.y = 0.25;
+        lootGroup.add(glow);
+
+        // Animasyon için referans
+        lootGroup.userData = { 
+            rotationSpeed: 0.01,
+            floatSpeed: 0.002,
+            floatOffset: Math.random() * Math.PI * 2
+        };
+
+        lootGroup.position.set(loot.position.x, loot.position.y + 0.25, loot.position.z);
+        lootGroup.castShadow = true;
+        this.scene.add(lootGroup);
 
         this.lootItems[loot.id] = {
             ...loot,
-            mesh: mesh,
+            mesh: lootGroup,
             glow: glow
         };
     }
@@ -436,6 +688,17 @@ class Game {
                         otherPlayer.position.z
                     );
                     otherPlayer.mesh.rotation.y = otherPlayer.rotation.y;
+                }
+            });
+
+            // Animate loot items
+            Object.values(this.lootItems).forEach(loot => {
+                if (loot.mesh && loot.mesh.userData) {
+                    // Yavaşça döndür
+                    loot.mesh.rotation.y += loot.mesh.userData.rotationSpeed;
+                    // Yukarı aşağı hareket
+                    const floatAmount = Math.sin(Date.now() * loot.mesh.userData.floatSpeed + loot.mesh.userData.floatOffset) * 0.1;
+                    loot.mesh.position.y = loot.position.y + 0.25 + floatAmount;
                 }
             });
 

@@ -20,41 +20,184 @@ class Player {
         this.mouseMovement = { x: 0, y: 0 };
         this.mouseSensitivity = 0.002;
 
-        // Third person camera
-        this.cameraDistance = 5;
-        this.cameraHeight = 2;
-        this.cameraAngle = 0;
+        // First person camera
+        this.isFirstPerson = true;
+        this.cameraHeight = 1.6; // Göz seviyesi
+        this.weaponOffset = { x: 0.3, y: -0.2, z: -0.5 }; // Silah pozisyonu
+        this.weaponMesh = null;
+        this.armorMesh = null;
 
         this.init();
     }
 
     init() {
-        // Create player model (simplified - using cylinder for body and sphere for head)
-        const bodyGeometry = new THREE.CylinderGeometry(0.4, 0.4, 1.2, 8);
-        const headGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+        // Create player model (more human-like)
+        this.createPlayerModel();
+        
+        // Setup controls
+        this.setupControls();
+    }
+
+    createPlayerModel() {
         const material = new THREE.MeshStandardMaterial({ 
             color: 0x8b4513,
             roughness: 0.8,
             metalness: 0.2
         });
-        
-        // Body
-        const body = new THREE.Mesh(bodyGeometry, material);
-        body.position.y = 0.6;
-        
+
         // Head
+        const headGeometry = new THREE.SphereGeometry(0.25, 16, 16);
         const head = new THREE.Mesh(headGeometry, material);
-        head.position.y = 1.5;
-        
+        head.position.y = 1.6;
+
+        // Body (torso)
+        const bodyGeometry = new THREE.BoxGeometry(0.5, 0.8, 0.3);
+        const body = new THREE.Mesh(bodyGeometry, material);
+        body.position.y = 1.0;
+
+        // Arms
+        const armGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.6, 8);
+        const leftArm = new THREE.Mesh(armGeometry, material);
+        leftArm.position.set(-0.35, 1.0, 0);
+        leftArm.rotation.z = 0.3;
+
+        const rightArm = new THREE.Mesh(armGeometry, material);
+        rightArm.position.set(0.35, 1.0, 0);
+        rightArm.rotation.z = -0.3;
+
+        // Legs
+        const legGeometry = new THREE.CylinderGeometry(0.12, 0.12, 0.7, 8);
+        const leftLeg = new THREE.Mesh(legGeometry, material);
+        leftLeg.position.set(-0.15, 0.35, 0);
+
+        const rightLeg = new THREE.Mesh(legGeometry, material);
+        rightLeg.position.set(0.15, 0.35, 0);
+
         // Group them together
         this.mesh = new THREE.Group();
-        this.mesh.add(body);
         this.mesh.add(head);
+        this.mesh.add(body);
+        this.mesh.add(leftArm);
+        this.mesh.add(rightArm);
+        this.mesh.add(leftLeg);
+        this.mesh.add(rightLeg);
         this.mesh.position.set(this.position.x, this.position.y, this.position.z);
         this.scene.add(this.mesh);
+    }
 
-        // Setup controls
-        this.setupControls();
+    createWeaponModel(weaponName) {
+        if (this.weaponMesh) {
+            this.scene.remove(this.weaponMesh);
+        }
+
+        // Basit silah modelleri (daha sonra GLTF ile değiştirilebilir)
+        const weaponGroup = new THREE.Group();
+        
+        if (weaponName === 'M4A1' || weaponName === 'AK-47') {
+            // Rifle model
+            const stock = new THREE.BoxGeometry(0.15, 0.05, 0.3);
+            const barrel = new THREE.CylinderGeometry(0.02, 0.02, 0.4, 8);
+            const grip = new THREE.BoxGeometry(0.05, 0.15, 0.1);
+            
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0x333333,
+                roughness: 0.3,
+                metalness: 0.8
+            });
+            
+            const stockMesh = new THREE.Mesh(stock, material);
+            stockMesh.position.set(0, 0, 0.1);
+            
+            const barrelMesh = new THREE.Mesh(barrel, material);
+            barrelMesh.rotation.x = Math.PI / 2;
+            barrelMesh.position.set(0, 0, -0.15);
+            
+            const gripMesh = new THREE.Mesh(grip, material);
+            gripMesh.position.set(0, -0.1, 0);
+            
+            weaponGroup.add(stockMesh);
+            weaponGroup.add(barrelMesh);
+            weaponGroup.add(gripMesh);
+        } else if (weaponName === 'Glock 17') {
+            // Pistol model
+            const body = new THREE.BoxGeometry(0.1, 0.05, 0.15);
+            const barrel = new THREE.CylinderGeometry(0.015, 0.015, 0.1, 8);
+            
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0x444444,
+                roughness: 0.3,
+                metalness: 0.8
+            });
+            
+            const bodyMesh = new THREE.Mesh(body, material);
+            const barrelMesh = new THREE.Mesh(barrel, material);
+            barrelMesh.rotation.x = Math.PI / 2;
+            barrelMesh.position.set(0, 0, -0.1);
+            
+            weaponGroup.add(bodyMesh);
+            weaponGroup.add(barrelMesh);
+        } else {
+            // Default weapon (box)
+            const geometry = new THREE.BoxGeometry(0.1, 0.05, 0.2);
+            const material = new THREE.MeshStandardMaterial({ color: 0x666666 });
+            weaponGroup.add(new THREE.Mesh(geometry, material));
+        }
+
+        this.weaponMesh = weaponGroup;
+        this.scene.add(this.weaponMesh);
+    }
+
+    updateWeaponPosition() {
+        if (!this.weaponMesh || !this.camera) return;
+
+        // Silahı kameranın önüne yerleştir
+        const weaponPosition = new THREE.Vector3(
+            this.weaponOffset.x,
+            this.weaponOffset.y,
+            this.weaponOffset.z
+        );
+
+        // Kameranın rotasyonuna göre silahı döndür
+        this.weaponMesh.position.copy(this.camera.position);
+        this.weaponMesh.rotation.copy(this.camera.rotation);
+        
+        // Offset uygula
+        const offset = new THREE.Vector3();
+        offset.setFromMatrixColumn(this.camera.matrix, 0);
+        offset.multiplyScalar(this.weaponOffset.x);
+        this.weaponMesh.position.add(offset);
+
+        offset.setFromMatrixColumn(this.camera.matrix, 1);
+        offset.multiplyScalar(this.weaponOffset.y);
+        this.weaponMesh.position.add(offset);
+
+        offset.setFromMatrixColumn(this.camera.matrix, 2);
+        offset.multiplyScalar(this.weaponOffset.z);
+        this.weaponMesh.position.add(offset);
+    }
+
+    updateArmorVisual() {
+        if (!this.mesh) return;
+
+        // Zırh seviyesine göre görsel değişiklik
+        if (this.armor > 0 && !this.armorMesh) {
+            // Zırh görseli ekle (basit bir overlay)
+            const armorGeometry = new THREE.BoxGeometry(0.55, 1.0, 0.35);
+            const armorMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x1e3a8a,
+                roughness: 0.2,
+                metalness: 0.9,
+                transparent: true,
+                opacity: 0.6
+            });
+            this.armorMesh = new THREE.Mesh(armorGeometry, armorMaterial);
+            this.armorMesh.position.y = 1.0;
+            this.mesh.add(this.armorMesh);
+        } else if (this.armor <= 0 && this.armorMesh) {
+            this.mesh.remove(this.armorMesh);
+            this.scene.remove(this.armorMesh);
+            this.armorMesh = null;
+        }
     }
 
     setupControls() {
@@ -130,16 +273,22 @@ class Player {
         this.mesh.position.set(this.position.x, this.position.y, this.position.z);
         this.mesh.rotation.y = this.rotation.y;
 
-        // Update camera (third person)
-        const cameraOffset = new THREE.Vector3(0, this.cameraHeight, this.cameraDistance);
-        cameraOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.rotation.y);
-        
+        // Update camera (first person)
         this.camera.position.set(
-            this.position.x + cameraOffset.x,
-            this.position.y + cameraOffset.y,
-            this.position.z + cameraOffset.z
+            this.position.x,
+            this.position.y + this.cameraHeight,
+            this.position.z
         );
-        this.camera.lookAt(this.position.x, this.position.y + 1, this.position.z);
+        
+        // Kamerayı rotasyona göre döndür
+        const euler = new THREE.Euler(this.rotation.x, this.rotation.y, 0, 'YXZ');
+        this.camera.quaternion.setFromEuler(euler);
+
+        // Silah pozisyonunu güncelle
+        this.updateWeaponPosition();
+
+        // Zırh görselini güncelle
+        this.updateArmorVisual();
 
         // Decrease hunger and thirst over time
         this.hunger = Math.max(0, this.hunger - 0.5 * deltaTime);
