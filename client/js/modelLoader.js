@@ -434,19 +434,17 @@ class ModelLoader {
     }
 
     createProceduralBuilding(buildingType) {
-        // Basit bina modeli (fallback)
+        // Basit bina modeli (fallback) - standart boyut (game.js'de ölçeklendirilecek)
         const group = new THREE.Group();
-        const size = buildingType === 'warehouse' ? 15 : 10;
-        const height = buildingType === 'warehouse' ? 20 : 15;
-        
-        const geometry = new THREE.BoxGeometry(size, height, size);
+        // Standart boyut (10x15x10) - game.js'de pos.width/height/depth ile ölçeklendirilecek
+        const geometry = new THREE.BoxGeometry(10, 15, 10);
         const material = new THREE.MeshStandardMaterial({
             color: 0x555555,
             roughness: 0.8,
             metalness: 0.2
         });
         const building = new THREE.Mesh(geometry, material);
-        building.position.y = height / 2;
+        building.position.y = 7.5; // height / 2
         building.castShadow = true;
         building.receiveShadow = true;
         group.add(building);
