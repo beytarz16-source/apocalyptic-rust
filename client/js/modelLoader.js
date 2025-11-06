@@ -392,6 +392,73 @@ class ModelLoader {
         return null;
     }
 
+    createProceduralCharacter() {
+        // Basit player modeli (fallback)
+        const group = new THREE.Group();
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0x8b4513,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        
+        // Head
+        const headGeometry = new THREE.SphereGeometry(0.11, 16, 16);
+        const head = new THREE.Mesh(headGeometry, material);
+        head.position.y = 1.65;
+        group.add(head);
+        
+        // Body
+        const bodyGeometry = new THREE.BoxGeometry(0.4, 0.6, 0.25);
+        const body = new THREE.Mesh(bodyGeometry, material);
+        body.position.y = 1.2;
+        group.add(body);
+        
+        // Arms
+        const armGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.65, 8);
+        const leftArm = new THREE.Mesh(armGeometry, material);
+        leftArm.position.set(-0.25, 1.15, 0);
+        leftArm.rotation.z = 0.2;
+        group.add(leftArm);
+        
+        const rightArm = new THREE.Mesh(armGeometry, material);
+        rightArm.position.set(0.25, 1.15, 0);
+        rightArm.rotation.z = -0.2;
+        group.add(rightArm);
+        
+        // Legs
+        const legGeometry = new THREE.CylinderGeometry(0.06, 0.06, 0.85, 8);
+        const leftLeg = new THREE.Mesh(legGeometry, material);
+        leftLeg.position.set(-0.1, 0.425, 0);
+        group.add(leftLeg);
+        
+        const rightLeg = new THREE.Mesh(legGeometry, material);
+        rightLeg.position.set(0.1, 0.425, 0);
+        group.add(rightLeg);
+        
+        return group;
+    }
+
+    createProceduralBuilding(buildingType) {
+        // Basit bina modeli (fallback)
+        const group = new THREE.Group();
+        const size = buildingType === 'warehouse' ? 15 : 10;
+        const height = buildingType === 'warehouse' ? 20 : 15;
+        
+        const geometry = new THREE.BoxGeometry(size, height, size);
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x555555,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const building = new THREE.Mesh(geometry, material);
+        building.position.y = height / 2;
+        building.castShadow = true;
+        building.receiveShadow = true;
+        group.add(building);
+        
+        return group;
+    }
+
     createProceduralTree() {
         const group = new THREE.Group();
         
