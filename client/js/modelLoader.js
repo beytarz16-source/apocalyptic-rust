@@ -100,6 +100,11 @@ class ModelLoader {
             console.log(`🔍 Model yükleniyor: ${modelType}/${modelName} - ${absoluteUrls[0]}`);
             console.log(`📦 GLTF Loader durumu:`, this.gltfLoader ? 'Hazır' : 'Yok');
             
+            // GLTF dosyasının bulunduğu klasörü path olarak ayarla (texture path'leri için)
+            const gltfPath = absoluteUrls[0].substring(0, absoluteUrls[0].lastIndexOf('/') + 1);
+            this.gltfLoader.setPath(gltfPath);
+            console.log(`📁 GLTF Path ayarlandı: ${gltfPath}`);
+            
             // İlk URL'den dene
             this.gltfLoader.load(
                 absoluteUrls[0],
@@ -121,6 +126,10 @@ class ModelLoader {
                     // İlk URL başarısız, alternatif dene
                     if (absoluteUrls[1]) {
                         console.log(`🔄 Alternatif model deneniyor: ${absoluteUrls[1]}`);
+                        // Alternatif GLTF dosyasının path'ini de ayarla
+                        const altGltfPath = absoluteUrls[1].substring(0, absoluteUrls[1].lastIndexOf('/') + 1);
+                        this.gltfLoader.setPath(altGltfPath);
+                        console.log(`📁 Alternatif GLTF Path ayarlandı: ${altGltfPath}`);
                         this.gltfLoader.load(
                             absoluteUrls[1],
                             (gltf) => {
