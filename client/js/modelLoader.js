@@ -44,10 +44,9 @@ class ModelLoader {
         }
 
         // Özel durumlar: scene.bin eksik modeller için direkt procedural kullan
-        // Artık buildings ve player için scene.bin var, sadece car ve barriers için procedural kullan
+        // Sadece car ve barriers için procedural kullan (tree ve building modelleri GLTF ile yüklenecek)
         if ((modelType === 'object' && modelName === 'car') ||
-            (modelType === 'object' && modelName === 'barriers') ||
-            (modelType === 'object' && modelName === 'tree')) {
+            (modelType === 'object' && modelName === 'barriers')) {
             const proceduralModel = this.createProceduralModel(modelType, modelName);
             if (proceduralModel) {
                 this.loadedModels[cacheKey] = proceduralModel;

@@ -523,20 +523,21 @@ class Game {
         for (let i = 0; i < 50; i++) {
             let treeGroup = null;
 
-            // GLTF model yükleme (her ağaç için farklı model olabilir)
-            if (this.modelLoader && i % 5 === 0) { // Her 5 ağaçtan birini GLTF ile yükle
+            // GLTF model yükleme - TÜM ağaçlar için GLTF model yüklemeyi dene
+            if (this.modelLoader) {
                 try {
                     const model = await this.modelLoader.loadModel('object', 'tree');
                     if (model) {
                         model.scale.set(1, 1, 1);
                         treeGroup = model;
+                        console.log(`✅ Ağaç GLTF modeli yüklendi: ${i + 1}/50`);
                     }
                 } catch (error) {
-                    console.warn('Ağaç modeli yüklenemedi, procedural kullanılıyor');
+                    console.warn(`Ağaç modeli yüklenemedi (${i + 1}/50), procedural kullanılıyor:`, error);
                 }
             }
 
-            // Fallback: Procedural
+            // Fallback: Procedural (GLTF yüklenemezse)
             if (!treeGroup) {
                 treeGroup = new THREE.Group();
             
@@ -604,27 +605,40 @@ class Game {
         ];
 
         for (const pos of buildingPositions) {
-            // GLTF model yükleme dene (scene.bin eksik olduğu için procedural kullanılacak)
+            // GLTF model yükleme - TÜM binalar için GLTF model yüklemeyi dene
             if (this.modelLoader) {
                 try {
                     const model = await this.modelLoader.loadModel('building', pos.type);
                     if (model) {
-                        // Model yüklendi (procedural olabilir), pozisyon ve ölçek ayarla
+                        // Model yüklendi, pozisyon ve ölçek ayarla
                         model.position.set(pos.x, 0, pos.z);
-                        // Procedural model ise ölçeklendirme gerekmez
+                        
+                        // Warehouse için 9 derece yatır (ev olarak kullanılacak)
+                        if (pos.type === 'warehouse') {
+                            // 9 derece = 9 * Math.PI / 180 radyan
+                            model.rotation.x = 9 * Math.PI / 180;
+                            console.log(`🏠 Warehouse 9 derece yatırıldı ve ev olarak kullanılıyor: (${pos.x}, ${pos.z})`);
+                            
+                            // Warehouse içine loot ekle (bölge olarak kullanılacak)
+                            this.addLootToWarehouse(pos);
+                        }
+                        
+                        // Ölçeklendirme (GLTF modelleri için)
                         if (pos.width && pos.height && pos.depth) {
                             model.scale.set(pos.width / 10, pos.height / 10, pos.depth / 10);
                         }
+                        
                         model.castShadow = true;
                         model.receiveShadow = true;
                         this.scene.add(model);
+                        
                         // Collision box ekle
                         this.collisionObjects.push({
                             type: 'box',
                             position: { x: pos.x, y: pos.height / 2, z: pos.z },
                             size: { width: pos.width, height: pos.height, depth: pos.depth }
                         });
-                        console.log(`✅ Bina yüklendi (procedural): ${pos.type} at (${pos.x}, ${pos.z})`);
+                        console.log(`✅ Bina GLTF modeli yüklendi: ${pos.type} at (${pos.x}, ${pos.z})`);
                         continue; // Bu bina için model kullanıldı
                     }
                 } catch (error) {
@@ -633,6 +647,51 @@ class Game {
             }
             // Fallback: Procedural bina
             this.createDetailedBuilding(pos);
+        }
+    }
+
+    // Warehouse içine loot ekle (bölge olarak kullanılacak)
+    addLootToWarehouse(buildingPos) {
+        // Warehouse içine 3-5 loot item ekle
+        const lootCount = 3 + Math.floor(Math.random() * 3); // 3-5 arası
+        const lootTypes = ['weapon', 'ammo', 'food', 'water'];
+        const weaponNames = ['M4A1', 'AK-47', 'Glock 17'];
+        
+        for (let i = 0; i < lootCount; i++) {
+            // Warehouse içinde rastgele pozisyon (bina içinde)
+            const offsetX = (Math.random() - 0.5) * (buildingPos.width * 0.6); // Bina genişliğinin %60'ı içinde
+            const offsetZ = (Math.random() - 0.5) * (buildingPos.depth * 0.6); // Bina derinliğinin %60'ı içinde
+            const lootY = 0.5 + Math.random() * 2; // Yerde veya biraz yukarıda
+            
+            const lootType = lootTypes[Math.floor(Math.random() * lootTypes.length)];
+            let itemName = '';
+            
+            if (lootType === 'weapon') {
+                itemName = weaponNames[Math.floor(Math.random() * weaponNames.length)];
+            } else if (lootType === 'ammo') {
+                itemName = 'Ammo Box';
+            } else if (lootType === 'food') {
+                itemName = 'Canned Food';
+            } else if (lootType === 'water') {
+                itemName = 'Water Bottle';
+            }
+            
+            const loot = {
+                id: `warehouse_loot_${buildingPos.x}_${buildingPos.z}_${i}`,
+                position: {
+                    x: buildingPos.x + offsetX,
+                    y: lootY,
+                    z: buildingPos.z + offsetZ
+                },
+                item: {
+                    type: lootType,
+                    name: itemName
+                }
+            };
+            
+            // Loot item'ı ekle
+            this.addLootItem(loot);
+            console.log(`🎁 Warehouse içine loot eklendi: ${lootType} (${itemName}) at (${loot.position.x.toFixed(1)}, ${loot.position.y.toFixed(1)}, ${loot.position.z.toFixed(1)})`);
         }
     }
 
