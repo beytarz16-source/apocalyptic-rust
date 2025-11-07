@@ -66,13 +66,23 @@ class Player {
                     }
                     
                     // Ölçeklendirme (gerçekçi insan boyutu: ~1.75m)
-                    model.scale.set(1, 1, 1);
+                    // GLTF modelleri genellikle çok büyük olabilir, ölçeklendir
+                    model.scale.set(0.01, 0.01, 0.01); // GLTF modelleri genellikle cm cinsinden, metreye çevir
                     model.position.set(this.position.x, this.position.y, this.position.z);
+                    
+                    // Tüm child'lar için shadow ayarla
+                    model.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                    
                     model.castShadow = true;
                     model.receiveShadow = true;
                     this.mesh = model;
                     this.scene.add(this.mesh);
-                    console.log('✅ Player model yüklendi (procedural veya GLTF)');
+                    console.log('✅ GLTF Player model yüklendi ve ayarlandı');
                     return; // Model kullanıldı, procedural fallback'e geçme
                 }
             } catch (error) {
