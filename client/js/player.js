@@ -8,7 +8,9 @@ class Player {
         this.speed = 5;
         this.walkSpeed = 5;
         this.runSpeed = 8;
-        this.jumpSpeed = 8;
+        // Gerçekçi zıplama: Ortalama insan ~0.4m zıplayabilir
+        // Fizik formülü: v = sqrt(2 * g * h) = sqrt(2 * 9.8 * 0.4) ≈ 2.8 m/s
+        this.jumpSpeed = 2.8; // Gerçekçi zıplama hızı (m/s)
         this.isGrounded = true;
         this.isRunning = false;
         
